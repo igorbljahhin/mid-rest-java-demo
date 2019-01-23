@@ -1,9 +1,6 @@
 package ee.sk.mid.services;
 
-import ee.sk.mid.Language;
-import ee.sk.mid.MobileIdAuthentication;
-import ee.sk.mid.MobileIdAuthenticationHash;
-import ee.sk.mid.MobileIdClient;
+import ee.sk.mid.*;
 import ee.sk.mid.exception.*;
 import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
@@ -41,7 +38,10 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withAuthenticationHash(authenticationHash)
                 .withLanguage(Language.ENG)
+                .withDisplayText("Mobile ID Java demo")
                 .build();
+
+        MobileIdAuthenticationResult authenticationResult = null;
 
         try {
             AuthenticationResponse response = client.getMobileIdConnector().authenticate(request);
@@ -49,6 +49,15 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                     "/mid-api/authentication/session/{sessionId}");
             MobileIdAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash.getHashInBase64(),
                     authenticationHash.getHashType());
+
+
+            AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
+            authenticationResult = validator.validate(authentication);
+
+            if (!authenticationResult.isValid()) {
+                return "Invalid authentication. " + String.join(", ", authenticationResult.getErrors());
+            }
+
         } catch (ParameterMissingException e) {
             return "Input parameters are missing";
         } catch (InternalServerErrorException | ResponseRetrievingException e) {
@@ -81,6 +90,10 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
             return e.getMessage();
         }
 
-        return "Authentication successful";
+
+        AuthenticationIdentity person = authenticationResult.getAuthenticationIdentity();
+
+        return String.format("Authentication successful. Welcome %s %s (%s) from %s",
+                person.getGivenName(), person.getSurName(), person.getIdentityCode(), person.getCountry());
     }
 }

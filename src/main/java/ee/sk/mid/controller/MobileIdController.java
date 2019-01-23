@@ -5,12 +5,14 @@ import ee.sk.mid.services.MobileIdAuthenticationService;
 import ee.sk.mid.services.MobileIdSignatureService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -31,7 +33,12 @@ public class MobileIdController {
     }
 
     @PostMapping(value = "/sign")
-    public ModelAndView sign(@ModelAttribute("userRequest") UserRequest userRequest, ModelMap model) {
+    public ModelAndView sign(@ModelAttribute("userRequest") UserRequest userRequest, BindingResult bindingResult, ModelMap model) {
+        if (bindingResult.hasErrors()) {
+            System.out.println("Input validation error");
+            return new ModelAndView("index", "userRequest", userRequest);
+        }
+
         List<String> result = signatureService.sign(userRequest);
         if (result.size() > 1) {
             model.addAttribute("result", result.get(0));
@@ -44,7 +51,13 @@ public class MobileIdController {
     }
 
     @PostMapping(value = "/authenticate")
-    public ModelAndView authenticate(@ModelAttribute("userRequest") UserRequest userRequest, ModelMap model) {
+    public ModelAndView authenticate(@ModelAttribute("userRequest") @Valid UserRequest userRequest, BindingResult bindingResult, ModelMap model) {
+
+        if (bindingResult.hasErrors()) {
+            System.out.println("Input validation error");
+            return new ModelAndView("index", "userRequest", userRequest);
+        }
+
         String result = authenticationService.authenticate(userRequest);
         model.addAttribute("result", result);
         return new ModelAndView("/response", model);

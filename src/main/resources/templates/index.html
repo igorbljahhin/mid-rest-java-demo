@@ -94,10 +94,10 @@
     <h1 class="h1-padding text-center">MOBILE-ID</h1>
     <ul class="nav nav-tabs">
         <li class="nav-item">
-            <a class="nav-link active" id="authentication">Authentication</a>
+            <a class="nav-link active" id="authentication">Authenticate</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="signature">Signature</a>
+            <a class="nav-link" id="signature">Sign a document</a>
         </li>
     </ul>
 </div>
@@ -105,19 +105,23 @@
 <div class="forms">
     <form method="POST" th:action="@{/authenticate}" th:object="${userRequest}" class="form-action" id="authenticationForm">
         <div class="form-group">
-            <label for="inputPhone">Phone number</label>
+            <label for="inputPhone">Phone number (+37XXXXXXXX)</label>
             <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputPhone">
+            <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" style="color:red">
+                inputPhone Error </div>
         </div>
         <div class="form-group">
             <label for="inputIdentityNumber">National identity number</label>
             <input type="text" th:field="*{nationalIdentityNumber}" class="form-control" id="inputIdentityNumber">
+            <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}" style="color:red">
+                 nationalIdentityNumber Error </div>
         </div>
         <button type="submit" class="btn btn-primary float-right">Authenticate</button>
     </form>
 
     <form method="POST" th:action="@{/sign}" th:object="${userRequest}" class="form-action" id="signatureForm">
         <div class="form-group">
-            <label for="inputSignPhone">Phone number</label>
+            <label for="inputSignPhone">Phone number (+37XXXXXXXX)</label>
             <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputSignPhone">
         </div>
         <div class="form-group">
