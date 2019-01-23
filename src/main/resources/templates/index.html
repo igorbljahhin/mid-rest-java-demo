@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="et" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Mobile-ID</title>
+    <!-- Bootstrap core CSS -->
+    <link href="../static/css/bootstrap.css" rel="stylesheet" th:href="@{/css/bootstrap.css}"/>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            display: -ms-flexbox;
+            -ms-flex-align: center;
+            align-items: center;
+            padding-bottom: 40px;
+            background-color: #f5f5f5;
+        }
+
+        .h1-padding {
+            padding-top: 100px;
+            padding-bottom: 30px;
+        }
+
+        .custom-switch {
+            width: 100%;
+            max-width: 330px;
+            margin: auto;
+            position: relative;
+            box-sizing: border-box;
+            height: auto;
+            padding: 30px 15px 0 15px;
+            font-size: 16px;
+        }
+
+        .forms {
+            padding-bottom: 100px;
+        }
+
+        .form-action {
+            width: 100%;
+            max-width: 330px;
+            padding: 100px 15px 15px 15px;
+            margin: auto;
+        }
+        .form-action .form-control {
+            position: relative;
+            box-sizing: border-box;
+            height: auto;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .form-action .form-control:focus {
+            z-index: 2;
+        }
+
+        #inputPhone {
+            margin-bottom: 10px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        #inputIdentityNumber {
+            margin-bottom: 30px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        #signatureForm {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <div class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container d-flex justify-content-between">
+            <a href="/" class="navbar-brand d-flex align-items-center">
+                <strong>Mobile-ID Demo</strong>
+            </a>
+            <a href="https://github.com/SK-EID/MID/wiki/Test-number-for-automated-testing-in-DEMO" target="_blank" class="navbar-brand d-flex align-items-center">
+                <strong>Test numbers</strong>
+            </a>
+        </div>
+    </div>
+</header>
+
+<div class="custom-switch">
+    <h1 class="h1-padding text-center">MOBILE-ID</h1>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" id="authentication">Authentication</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="signature">Signature</a>
+        </li>
+    </ul>
+</div>
+
+<div class="forms">
+    <form method="POST" th:action="@{/authenticate}" th:object="${userRequest}" class="form-action" id="authenticationForm">
+        <div class="form-group">
+            <label for="inputPhone">Phone number</label>
+            <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputPhone">
+        </div>
+        <div class="form-group">
+            <label for="inputIdentityNumber">National identity number</label>
+            <input type="text" th:field="*{nationalIdentityNumber}" class="form-control" id="inputIdentityNumber">
+        </div>
+        <button type="submit" class="btn btn-primary float-right">Authenticate</button>
+    </form>
+
+    <form method="POST" th:action="@{/sign}" th:object="${userRequest}" class="form-action" id="signatureForm">
+        <div class="form-group">
+            <label for="inputSignPhone">Phone number</label>
+            <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputSignPhone">
+        </div>
+        <div class="form-group">
+            <label for="inputSignIdentityNumber">National identity number</label>
+            <input type="text" th:field="*{nationalIdentityNumber}" class="form-control" id="inputSignIdentityNumber">
+        </div>
+        <div class="form-group">
+            <label for="document">Document to sign</label>
+            <input type="file" th:field="*{file}" class="form-control" id="document">
+        </div>
+        <button type="submit" class="btn btn-primary float-right">Sign</button>
+    </form>
+</div>
+
+<script src="../static/js/bootstrap.js" th:href="@{/js/bootstrap.js}"></script>
+<script type="text/javascript">
+    var authenticationTab = document.getElementById('authentication');
+    var signatureTab = document.getElementById('signature');
+    authenticationTab.addEventListener('click', showAuthentication, false);
+    signatureTab.addEventListener('click', showSigning, false);
+
+    function showAuthentication() {
+        document.getElementById('authenticationForm').style.display = 'block';
+        document.getElementById('signatureForm').style.display = 'none';
+        document.getElementById('authentication').classList.add("active");
+        document.getElementById('signature').classList.remove("active");
+    }
+
+    function showSigning() {
+        document.getElementById('authenticationForm').style.display = 'none';
+        document.getElementById('signatureForm').style.display = 'block';
+        document.getElementById('authentication').classList.remove("active");
+        document.getElementById('signature').classList.add("active");
+    }
+</script>
+</body>
+
+</html>
