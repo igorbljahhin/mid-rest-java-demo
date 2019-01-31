@@ -65,9 +65,27 @@
         }
 
         #inputIdentityNumber {
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             border-top-left-radius: 0;
             border-top-right-radius: 0;
+        }
+
+        #inputSignPhone {
+            margin-bottom: 10px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        #inputSignIdentityNumber {
+            margin-bottom: 10px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        #document {
+            margin-bottom: 10px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
         }
 
         #signatureForm {
@@ -103,7 +121,7 @@
 </div>
 
 <div class="forms">
-    <form method="POST" th:action="@{/authenticate}" th:object="${userRequest}" class="form-action" id="authenticationForm">
+    <form method="POST" th:action="@{/authenticationRequest}" th:object="${userRequest}" class="form-action" id="authenticationForm">
         <div class="form-group">
             <label for="inputPhone">Phone number (+37XXXXXXXX)</label>
             <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputPhone">
@@ -119,20 +137,24 @@
         <button type="submit" class="btn btn-primary float-right">Authenticate</button>
     </form>
 
-    <form method="POST" th:action="@{/sign}" th:object="${userRequest}" class="form-action" id="signatureForm">
+    <form method="POST" th:action="@{/signatureRequest}" th:object="${userRequest}" enctype="multipart/form-data" class="form-action" id="signatureForm">
         <div class="form-group">
             <label for="inputSignPhone">Phone number (+37XXXXXXXX)</label>
             <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputSignPhone">
+            <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" style="color:red">
+                inputSignPhone Error </div>
         </div>
         <div class="form-group">
             <label for="inputSignIdentityNumber">National identity number</label>
             <input type="text" th:field="*{nationalIdentityNumber}" class="form-control" id="inputSignIdentityNumber">
+            <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}" style="color:red">
+                inputSignIdentityNumber Error </div>
         </div>
         <div class="form-group">
             <label for="document">Document to sign</label>
-            <input type="file" th:field="*{file}" class="form-control" id="document">
+            <input type="file" name="file" class="form-control" id="document">
         </div>
-        <button type="submit" class="btn btn-primary float-right">Sign</button>
+        <button type="submit" value="submit" class="btn btn-primary float-right">Sign</button>
     </form>
 </div>
 

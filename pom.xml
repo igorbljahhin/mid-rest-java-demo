@@ -26,7 +26,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -37,6 +36,7 @@
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.digidoc4j</groupId>
             <artifactId>digidoc4j</artifactId>
@@ -46,7 +46,6 @@
             <groupId>ee.sk.mid</groupId>
             <artifactId>mid-rest-java-client</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
@@ -58,5 +57,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

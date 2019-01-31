@@ -1,18 +1,22 @@
 package ee.sk.mid.controller;
 
+import ee.sk.mid.MobileIdAuthenticationHash;
 import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.services.MobileIdAuthenticationService;
 import ee.sk.mid.services.MobileIdSignatureService;
+import eu.europa.esig.dss.MimeType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.validation.Valid;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -20,6 +24,8 @@ public class MobileIdController {
 
     private MobileIdSignatureService signatureService;
     private MobileIdAuthenticationService authenticationService;
+
+    private MobileIdAuthenticationHash authenticationHash;
 
     @Autowired
     public MobileIdController(MobileIdSignatureService signatureService, MobileIdAuthenticationService authenticationService) {
@@ -32,14 +38,49 @@ public class MobileIdController {
         return new ModelAndView("index", "userRequest", new UserRequest());
     }
 
-    @PostMapping(value = "/sign")
-    public ModelAndView sign(@ModelAttribute("userRequest") UserRequest userRequest, BindingResult bindingResult, ModelMap model) {
+    @PostMapping(value = "/signatureRequest")
+    public ModelAndView sendSignatureRequest(@ModelAttribute("userRequest") UserRequest userRequest,
+                                             @RequestParam("file") MultipartFile file, BindingResult bindingResult, ModelMap model) {
+
         if (bindingResult.hasErrors()) {
             System.out.println("Input validation error");
             return new ModelAndView("index", "userRequest", userRequest);
         }
 
-        List<String> result = signatureService.sign(userRequest);
+        if (file == null || file.getOriginalFilename() == null || file.isEmpty()) {
+            System.out.println("Please select a file to upload");
+            return new ModelAndView("index", "userRequest", userRequest);
+        }
+
+        String filePath;
+        MimeType mimeType;
+        try {
+            byte[] bytes = file.getBytes();
+            filePath = "../mid-rest-java-demo/src/main/resources/static/" + file.getOriginalFilename();
+            mimeType = MimeType.fromFileName(file.getOriginalFilename());
+            Path path = Paths.get(filePath);
+            Files.write(path, bytes);
+        } catch (IOException e) {
+            System.out.println("File reading error");
+            return new ModelAndView("index", "userRequest", userRequest);
+        }
+
+        String result = signatureService.sign(userRequest, filePath, mimeType);
+
+        if (result.length() > 4) {
+            model.addAttribute("result", result);
+            return new ModelAndView("/response", model);
+        } else {
+            String verificationCode = "Verification code: " + result;
+            model.addAttribute("verificationCode", verificationCode);
+            return new ModelAndView("/signature", model);
+        }
+    }
+
+    @PostMapping(value = "/sign")
+    public ModelAndView sign(ModelMap model) {
+        List<String> result = signatureService.sign();
+
         if (result.size() > 1) {
             model.addAttribute("result", result.get(0));
             model.addAttribute("isValid", result.get(1));
@@ -50,15 +91,26 @@ public class MobileIdController {
         return new ModelAndView("/response", model);
     }
 
-    @PostMapping(value = "/authenticate")
-    public ModelAndView authenticate(@ModelAttribute("userRequest") @Valid UserRequest userRequest, BindingResult bindingResult, ModelMap model) {
+    @PostMapping(value = "/authenticationRequest")
+    public ModelAndView sendAuthenticationRequest(@ModelAttribute("userRequest") @Valid UserRequest userRequest,
+                                                  BindingResult bindingResult, ModelMap model) {
 
         if (bindingResult.hasErrors()) {
             System.out.println("Input validation error");
             return new ModelAndView("index", "userRequest", userRequest);
         }
 
-        String result = authenticationService.authenticate(userRequest);
+        authenticationHash = authenticationService.authenticate(userRequest);
+        String verificationCode = "Verification code: " + authenticationHash.calculateVerificationCode();
+
+        model.addAttribute("verificationCode", verificationCode);
+
+        return new ModelAndView("/authentication", model);
+    }
+
+    @PostMapping(value = "/authenticate")
+    public ModelAndView authenticate(ModelMap model) {
+        String result = authenticationService.authenticate(authenticationHash);
         model.addAttribute("result", result);
         return new ModelAndView("/response", model);
     }

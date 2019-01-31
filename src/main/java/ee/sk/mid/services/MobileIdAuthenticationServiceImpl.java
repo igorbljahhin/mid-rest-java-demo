@@ -16,22 +16,22 @@ import javax.ws.rs.NotFoundException;
 @Service
 public class MobileIdAuthenticationServiceImpl implements MobileIdAuthenticationService {
 
-    public MobileIdAuthenticationServiceImpl() {
-    }
+    private MobileIdClient client;
+    private AuthenticationRequest request;
 
-    @Override
-    public String authenticate(UserRequest userRequest) {
-        MobileIdClient client = MobileIdClient.newBuilder()
+    public MobileIdAuthenticationServiceImpl() {
+        client = MobileIdClient.newBuilder()
                 .withRelyingPartyUUID("00000000-0000-0000-0000-000000000000")
                 .withRelyingPartyName("DEMO")
                 .withHostUrl("https://tsp.demo.sk.ee")
                 .build();
+    }
 
+    @Override
+    public MobileIdAuthenticationHash authenticate(UserRequest userRequest) {
         MobileIdAuthenticationHash authenticationHash = MobileIdAuthenticationHash.generateRandomHashOfDefaultType();
 
-        String verificationCode = authenticationHash.calculateVerificationCode();
-
-        AuthenticationRequest request = AuthenticationRequest.newBuilder()
+        request = AuthenticationRequest.newBuilder()
                 .withRelyingPartyUUID(client.getRelyingPartyUUID())
                 .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
@@ -41,8 +41,13 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .withDisplayText("Mobile ID Java demo")
                 .build();
 
-        MobileIdAuthenticationResult authenticationResult = null;
+        return authenticationHash;
+    }
 
+    @Override
+    public String authenticate(MobileIdAuthenticationHash authenticationHash) {
+
+        MobileIdAuthenticationResult authenticationResult;
         try {
             AuthenticationResponse response = client.getMobileIdConnector().authenticate(request);
             SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(response.getSessionID(),
@@ -50,14 +55,12 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
             MobileIdAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash.getHashInBase64(),
                     authenticationHash.getHashType());
 
-
             AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
             authenticationResult = validator.validate(authentication);
 
             if (!authenticationResult.isValid()) {
                 return "Invalid authentication. " + String.join(", ", authenticationResult.getErrors());
             }
-
         } catch (ParameterMissingException e) {
             return "Input parameters are missing";
         } catch (InternalServerErrorException | ResponseRetrievingException e) {
@@ -89,7 +92,6 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
         } catch (RuntimeException e) {
             return e.getMessage();
         }
-
 
         AuthenticationIdentity person = authenticationResult.getAuthenticationIdentity();
 

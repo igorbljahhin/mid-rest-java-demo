@@ -6,6 +6,7 @@ import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
+import eu.europa.esig.dss.MimeType;
 import org.digidoc4j.*;
 import org.springframework.stereotype.Service;
 
@@ -21,52 +22,55 @@ import java.util.List;
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
     private MobileIdCertificateService certificateService;
+    private MobileIdClient client;
+
+    private Container container;
+    private DataToSign dataToSign;
+    private SignatureRequest request;
 
     public MobileIdSignatureServiceImpl(MobileIdCertificateService certificateService) {
         this.certificateService = certificateService;
+
+        client = MobileIdClient.newBuilder()
+                .withRelyingPartyUUID("00000000-0000-0000-0000-000000000000")
+                .withRelyingPartyName("DEMO")
+                .withHostUrl("https://tsp.demo.sk.ee")
+                .build();
     }
 
     @Override
-    public List<String> sign(UserRequest userRequest) {
-        List<String> result = new ArrayList<>();
+    public String sign(UserRequest userRequest, String filePath, MimeType mimeType) {
+
         Configuration configuration = new Configuration(Configuration.Mode.TEST);
 
-        Container container = ContainerBuilder
+        container = ContainerBuilder
                 .aContainer()
                 .withConfiguration(configuration)
-                .withDataFile("../mid-rest-java-client/mid-rest-java-demo/src/main/resources/static/file_to_sign.txt", "text/plain")
+                .withDataFile(filePath, mimeType.getMimeTypeString())
                 .build();
 
         X509Certificate signingCert;
         try {
             signingCert = certificateService.getCertificate(userRequest);
         } catch (ParameterMissingException e) {
-            result.add("Input parameters are missing");
-            return result;
+            return "Input parameters are missing";
         } catch (InternalServerErrorException | ResponseRetrievingException e) {
-            result.add("Error getting response from cert-store/MSSP");
-            return result;
+            return "Error getting response from cert-store/MSSP";
         } catch (NotFoundException e) {
-            result.add("Response not found ");
-            return result;
+            return "Response not found ";
         } catch (BadRequestException e) {
-            result.add("Request is invalid");
-            return result;
+            return "Request is invalid";
         } catch (NotAuthorizedException e) {
-            result.add("Request is unauthorized");
-            return result;
+            return "Request is unauthorized";
         } catch (SessionTimeoutException e) {
-            result.add("Session timeout");
-            return result;
+            return "Session timeout";
         } catch (ExpiredException e) {
-            result.add("Inactive certificate found");
-            return result;
+            return "Inactive certificate found";
         } catch (RuntimeException e) {
-            result.add(e.getMessage());
-            return result;
+            return e.getMessage();
         }
 
-        DataToSign dataToSign = SignatureBuilder
+        dataToSign = SignatureBuilder
                 .aSignature(container)
                 .withSigningCertificate(signingCert)
                 .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
@@ -74,17 +78,52 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
         byte[] signatureToSign = dataToSign.getDataToSign();
 
+        String verificationCode;
+        try {
+            verificationCode = sign(signatureToSign, userRequest);
+        } catch (ParameterMissingException e) {
+            return "Input parameters are missing";
+        } catch (RuntimeException e) {
+            return e.getMessage();
+        }
+
+        return verificationCode;
+    }
+
+    @Override
+    public String sign(byte[] signatureToSign, UserRequest userRequest) {
+        SignableData dataToSign = new SignableData(signatureToSign);
+        dataToSign.setHashType(HashType.SHA256);
+
+        request = SignatureRequest.newBuilder()
+                .withRelyingPartyUUID(client.getRelyingPartyUUID())
+                .withRelyingPartyName(client.getRelyingPartyName())
+                .withPhoneNumber(userRequest.getPhoneNumber())
+                .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
+                .withSignableData(dataToSign)
+                .withLanguage(Language.ENG)
+                .build();
+
+        return dataToSign.calculateVerificationCode();
+    }
+
+    @Override
+    public List<String> sign() {
+        List<String> result = new ArrayList<>();
+
         MobileIdSignature mobileIdSignature;
         try {
-            mobileIdSignature = sign(signatureToSign, userRequest);
-        } catch (ParameterMissingException e) {
-            result.add("Input parameters are missing");
-            return result;
+            SignatureResponse response = client.getMobileIdConnector().sign(request);
+
+            SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(response.getSessionID(),
+                    "/mid-api/signature/session/{sessionId}");
+
+            mobileIdSignature = client.createMobileIdSignature(sessionStatus);
         } catch (InternalServerErrorException | ResponseRetrievingException e) {
             result.add("Error getting response from cert-store/MSSP");
             return result;
         } catch (NotFoundException e) {
-            result.add("Response not found ");
+            result.add("Response not found");
             return result;
         } catch (BadRequestException e) {
             result.add("Request is invalid");
@@ -130,6 +169,7 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
         result.add("Signing successful");
         result.add(isSignatureValid(signature));
         result.add("Signed on: " + signature.getTimeStampCreationTime().toString());
+
         return result;
     }
 
@@ -139,34 +179,5 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
         } else {
             return "Signature is not valid";
         }
-    }
-
-    public MobileIdSignature sign(byte[] signatureToSign, UserRequest userRequest) {
-        MobileIdClient client = MobileIdClient.newBuilder()
-                .withRelyingPartyUUID("00000000-0000-0000-0000-000000000000")
-                .withRelyingPartyName("DEMO")
-                .withHostUrl("https://tsp.demo.sk.ee")
-                .build();
-
-        SignableData dataToSign = new SignableData(signatureToSign);
-        dataToSign.setHashType(HashType.SHA256);
-
-        String verificationCode = dataToSign.calculateVerificationCode();
-
-        SignatureRequest request = SignatureRequest.newBuilder()
-                .withRelyingPartyUUID(client.getRelyingPartyUUID())
-                .withRelyingPartyName(client.getRelyingPartyName())
-                .withPhoneNumber(userRequest.getPhoneNumber())
-                .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
-                .withSignableData(dataToSign)
-                .withLanguage(Language.ENG)
-                .build();
-
-        SignatureResponse response = client.getMobileIdConnector().sign(request);
-
-        SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(response.getSessionID(),
-                "/mid-api/signature/session/{sessionId}");
-
-        return client.createMobileIdSignature(sessionStatus);
     }
 }

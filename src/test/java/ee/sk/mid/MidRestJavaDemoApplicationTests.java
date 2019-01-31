@@ -12,6 +12,4 @@ public class MidRestJavaDemoApplicationTests {
     @Test
     public void contextLoads() {
     }
-
 }
-
