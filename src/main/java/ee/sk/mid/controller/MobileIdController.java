@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Map;
 
 @RestController
 public class MobileIdController {
@@ -71,7 +71,7 @@ public class MobileIdController {
             model.addAttribute("result", result);
             return new ModelAndView("/response", model);
         } else {
-            String verificationCode = "Verification code: " + result;
+            String verificationCode = "Your control code is: " + result;
             model.addAttribute("verificationCode", verificationCode);
             return new ModelAndView("/signature", model);
         }
@@ -79,14 +79,15 @@ public class MobileIdController {
 
     @PostMapping(value = "/sign")
     public ModelAndView sign(ModelMap model) {
-        List<String> result = signatureService.sign();
+        Map<String, String> result = signatureService.sign();
 
-        if (result.size() > 1) {
-            model.addAttribute("result", result.get(0));
-            model.addAttribute("isValid", result.get(1));
-            model.addAttribute("timestamp", result.get(2));
+        if (result.containsKey("isValid")) {
+            model.addAttribute("result", result.get("result"));
+            model.addAttribute("isValid", result.get("isValid"));
+            model.addAttribute("timestamp", result.get("timestamp"));
+            model.addAttribute("filename", result.get("filename"));
         } else {
-            model.addAttribute("result", result.get(0));
+            model.addAttribute("result", result.get("result"));
         }
         return new ModelAndView("/response", model);
     }
@@ -101,7 +102,7 @@ public class MobileIdController {
         }
 
         authenticationHash = authenticationService.authenticate(userRequest);
-        String verificationCode = "Verification code: " + authenticationHash.calculateVerificationCode();
+        String verificationCode = "Control code: " + authenticationHash.calculateVerificationCode();
 
         model.addAttribute("verificationCode", verificationCode);
 

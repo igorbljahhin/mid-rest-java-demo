@@ -3,7 +3,7 @@ package ee.sk.mid.services;
 import ee.sk.mid.model.UserRequest;
 import eu.europa.esig.dss.MimeType;
 
-import java.util.List;
+import java.util.Map;
 
 public interface MobileIdSignatureService {
 
@@ -11,5 +11,5 @@ public interface MobileIdSignatureService {
 
     String sign(byte[] signatureToSign, UserRequest userRequest);
 
-    List<String> sign();
+    Map<String, String> sign();
 }

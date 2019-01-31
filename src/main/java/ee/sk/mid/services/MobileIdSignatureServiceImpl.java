@@ -8,18 +8,34 @@ import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
 import eu.europa.esig.dss.MimeType;
 import org.digidoc4j.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
+import java.io.File;
+import java.io.IOException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
+
+    @Value("${mid.relyingPartyUuid}")
+    private String midRelyingPartyUuid;
+
+    @Value("${mid.relyingPartyName}")
+    private String midRelyingPartyName;
+
+    @Value("${mid.applicationProvider.host}")
+    private String midApplicationProviderHost;
+
+    @Value("${mid.sign.displayText}")
+    private String midSignDisplayText;
 
     private MobileIdCertificateService certificateService;
     private MobileIdClient client;
@@ -28,13 +44,17 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
     private DataToSign dataToSign;
     private SignatureRequest request;
 
+
     public MobileIdSignatureServiceImpl(MobileIdCertificateService certificateService) {
         this.certificateService = certificateService;
+    }
 
+    @PostConstruct
+    public void init() {
         client = MobileIdClient.newBuilder()
-                .withRelyingPartyUUID("00000000-0000-0000-0000-000000000000")
-                .withRelyingPartyName("DEMO")
-                .withHostUrl("https://tsp.demo.sk.ee")
+                .withRelyingPartyUUID(midRelyingPartyUuid)
+                .withRelyingPartyName(midRelyingPartyName)
+                .withHostUrl(midApplicationProviderHost)
                 .build();
     }
 
@@ -102,14 +122,15 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withSignableData(dataToSign)
                 .withLanguage(Language.ENG)
+                .withDisplayText(midSignDisplayText)
                 .build();
 
         return dataToSign.calculateVerificationCode();
     }
 
     @Override
-    public List<String> sign() {
-        List<String> result = new ArrayList<>();
+    public Map<String, String> sign() {
+        Map<String, String> result = new HashMap<>();
 
         MobileIdSignature mobileIdSignature;
         try {
@@ -120,55 +141,67 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
             mobileIdSignature = client.createMobileIdSignature(sessionStatus);
         } catch (InternalServerErrorException | ResponseRetrievingException e) {
-            result.add("Error getting response from cert-store/MSSP");
+            result.put("result", "Error getting response from cert-store/MSSP");
             return result;
         } catch (NotFoundException e) {
-            result.add("Response not found");
+            result.put("result", "Response not found");
             return result;
         } catch (BadRequestException e) {
-            result.add("Request is invalid");
+            result.put("result", "Request is invalid");
             return result;
         } catch (NotAuthorizedException e) {
-            result.add("Request is unauthorized");
+            result.put("result", "Request is unauthorized");
             return result;
         } catch (SessionTimeoutException e) {
-            result.add("Session timeout");
+            result.put("result", "Session timeout");
             return result;
         } catch (NotMIDClientException e) {
-            result.add("Given user has no active certificates and is not M-ID client");
+            result.put("result", "Given user has no active certificates and is not MID client");
             return result;
         } catch (ExpiredException e) {
-            result.add("MSSP transaction timed out");
+            result.put("result", "MSSP transaction timed out");
             return result;
         } catch (UserCancellationException e) {
-            result.add("User cancelled the operation");
+            result.put("result", "User cancelled the operation");
             return result;
         } catch (MIDNotReadyException e) {
-            result.add("Mobile-ID not ready");
+            result.put("result", "Mobile-ID not ready");
             return result;
         } catch (SimNotAvailableException e) {
-            result.add("Sim not available");
+            result.put("result", "Sim not available");
             return result;
         } catch (DeliveryException e) {
-            result.add("SMS sending error");
+            result.put("result", "SMS sending error");
             return result;
         } catch (InvalidCardResponseException e) {
-            result.add("Invalid response from card");
+            result.put("result", "Invalid response from card");
             return result;
         } catch (SignatureHashMismatchException e) {
-            result.add("Hash does not match with certificate type");
+            result.put("result", "Hash does not match with certificate type");
             return result;
         } catch (RuntimeException e) {
-            result.add(e.getMessage());
+            result.put("result", e.getMessage());
             return result;
         }
 
         Signature signature = dataToSign.finalize(mobileIdSignature.getValue());
         container.addSignature(signature);
 
-        result.add("Signing successful");
-        result.add(isSignatureValid(signature));
-        result.add("Signed on: " + signature.getTimeStampCreationTime().toString());
+        String filePath  = null;
+
+        try {
+            File containerFile = File.createTempFile("mid-demo-", ".asice");
+            filePath = containerFile.getAbsolutePath();
+            container.saveAsFile(filePath);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        result.put("result", "Signing successful");
+        result.put("isValid", isSignatureValid(signature));
+        result.put("timestamp", "Signed on: " + signature.getTimeStampCreationTime().toString());
+        result.put("filename", "Container was saved to: " + filePath);
 
         return result;
     }

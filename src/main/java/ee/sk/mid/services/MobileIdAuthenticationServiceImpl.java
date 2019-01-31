@@ -6,8 +6,10 @@ import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.AuthenticationRequest;
 import ee.sk.mid.rest.dao.response.AuthenticationResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotAuthorizedException;
@@ -16,14 +18,27 @@ import javax.ws.rs.NotFoundException;
 @Service
 public class MobileIdAuthenticationServiceImpl implements MobileIdAuthenticationService {
 
+    @Value("${mid.relyingPartyUuid}")
+    private String midRelyingPartyUuid;
+
+    @Value("${mid.relyingPartyName}")
+    private String midRelyingPartyName;
+
+    @Value("${mid.applicationProvider.host}")
+    private String midApplicationProviderHost;
+
+    @Value("${mid.auth.displayText}")
+    private String midAuthDisplayText;
+
     private MobileIdClient client;
     private AuthenticationRequest request;
 
-    public MobileIdAuthenticationServiceImpl() {
+    @PostConstruct
+    public void init() {
         client = MobileIdClient.newBuilder()
-                .withRelyingPartyUUID("00000000-0000-0000-0000-000000000000")
-                .withRelyingPartyName("DEMO")
-                .withHostUrl("https://tsp.demo.sk.ee")
+                .withRelyingPartyUUID(midRelyingPartyUuid)
+                .withRelyingPartyName(midRelyingPartyName)
+                .withHostUrl(midApplicationProviderHost)
                 .build();
     }
 
@@ -38,7 +53,7 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withAuthenticationHash(authenticationHash)
                 .withLanguage(Language.ENG)
-                .withDisplayText("Mobile ID Java demo")
+                .withDisplayText(midAuthDisplayText)
                 .build();
 
         return authenticationHash;
