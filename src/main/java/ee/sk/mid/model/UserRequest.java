@@ -1,5 +1,7 @@
 package ee.sk.mid.model;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
@@ -19,6 +21,8 @@ public class UserRequest {
         return phoneNumber;
     }
 
+    private MultipartFile file;
+
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
@@ -29,5 +33,13 @@ public class UserRequest {
 
     public void setNationalIdentityNumber(String nationalIdentityNumber) {
         this.nationalIdentityNumber = nationalIdentityNumber;
+    }
+
+    public MultipartFile getFile() {
+        return file;
+    }
+
+    public void setFile(MultipartFile file) {
+        this.file = file;
     }
 }

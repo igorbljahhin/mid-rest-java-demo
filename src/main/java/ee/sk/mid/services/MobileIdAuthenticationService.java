@@ -1,11 +1,12 @@
 package ee.sk.mid.services;
 
-import ee.sk.mid.MobileIdAuthenticationHash;
+import ee.sk.mid.AuthenticationIdentity;
+import ee.sk.mid.model.AuthenticationSessionInfo;
 import ee.sk.mid.model.UserRequest;
 
 public interface MobileIdAuthenticationService {
 
-    MobileIdAuthenticationHash authenticate(UserRequest userRequest);
+    AuthenticationSessionInfo startAuthentication(UserRequest userRequest);
 
-    String authenticate(MobileIdAuthenticationHash authenticationHash);
+    AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo);
 }

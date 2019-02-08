@@ -1,23 +1,29 @@
 package ee.sk.mid.services;
 
 import ee.sk.mid.*;
-import ee.sk.mid.exception.*;
+import ee.sk.mid.exception.FileUploadException;
+import ee.sk.mid.exception.MidSignException;
+import ee.sk.mid.model.SigningResult;
+import ee.sk.mid.model.SigningSessionInfo;
 import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
 import eu.europa.esig.dss.MimeType;
+import org.apache.commons.codec.binary.Base64;
 import org.digidoc4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.PostConstruct;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,192 +31,121 @@ import java.util.Map;
 @Service
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
-    @Value("${mid.relyingPartyUuid}")
-    private String midRelyingPartyUuid;
+    Logger logger = LoggerFactory.getLogger(MobileIdSignatureServiceImpl.class);
 
-    @Value("${mid.relyingPartyName}")
-    private String midRelyingPartyName;
-
-    @Value("${mid.applicationProvider.host}")
-    private String midApplicationProviderHost;
 
     @Value("${mid.sign.displayText}")
     private String midSignDisplayText;
 
     private MobileIdCertificateService certificateService;
+
+    @Autowired
     private MobileIdClient client;
-
-    private Container container;
-    private DataToSign dataToSign;
-    private SignatureRequest request;
-
 
     public MobileIdSignatureServiceImpl(MobileIdCertificateService certificateService) {
         this.certificateService = certificateService;
     }
 
-    @PostConstruct
-    public void init() {
-        client = MobileIdClient.newBuilder()
-                .withRelyingPartyUUID(midRelyingPartyUuid)
-                .withRelyingPartyName(midRelyingPartyName)
-                .withHostUrl(midApplicationProviderHost)
-                .build();
-    }
-
     @Override
-    public String sign(UserRequest userRequest, String filePath, MimeType mimeType) {
+    public SigningSessionInfo sendSignatureRequest(UserRequest userRequest) {
+        String uploadedFileAbsolutePath = storeFileInTempDirectory(userRequest.getFile());
+        MimeType mimeType = MimeType.fromFileName(uploadedFileAbsolutePath);
 
-        Configuration configuration = new Configuration(Configuration.Mode.TEST);
+        Configuration configuration = new Configuration(Configuration.Mode.TEST); // TODO move to configuration
 
-        container = ContainerBuilder
+        Container container = ContainerBuilder
                 .aContainer()
                 .withConfiguration(configuration)
-                .withDataFile(filePath, mimeType.getMimeTypeString())
+                .withDataFile(uploadedFileAbsolutePath, mimeType.getMimeTypeString())
                 .build();
 
-        X509Certificate signingCert;
-        try {
-            signingCert = certificateService.getCertificate(userRequest);
-        } catch (ParameterMissingException e) {
-            return "Input parameters are missing";
-        } catch (InternalServerErrorException | ResponseRetrievingException e) {
-            return "Error getting response from cert-store/MSSP";
-        } catch (NotFoundException e) {
-            return "Response not found ";
-        } catch (BadRequestException e) {
-            return "Request is invalid";
-        } catch (NotAuthorizedException e) {
-            return "Request is unauthorized";
-        } catch (SessionTimeoutException e) {
-            return "Session timeout";
-        } catch (ExpiredException e) {
-            return "Inactive certificate found";
-        } catch (RuntimeException e) {
-            return e.getMessage();
-        }
+        X509Certificate signingCert = certificateService.getCertificate(userRequest);
 
-        dataToSign = SignatureBuilder
+        DataToSign dataToSignExternally = SignatureBuilder
                 .aSignature(container)
                 .withSigningCertificate(signingCert)
                 .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
+                .withSignatureProfile(SignatureProfile.LT)
                 .buildDataToSign();
 
-        byte[] signatureToSign = dataToSign.getDataToSign();
 
-        String verificationCode;
-        try {
-            verificationCode = sign(signatureToSign, userRequest);
-        } catch (ParameterMissingException e) {
-            return "Input parameters are missing";
-        } catch (RuntimeException e) {
-            return e.getMessage();
-        }
+        byte[] hash = DigestCalculator.calculateDigest(dataToSignExternally.getDataToSign(), HashType.SHA256);
+        SignableHash signableHash = new SignableHash(); // TODO make setHash() public and add builder!
+        signableHash.setHashInBase64(Base64.encodeBase64String(hash)); // insteaed of hash
+        signableHash.setHashType(HashType.SHA256);
 
-        return verificationCode;
-    }
+        String hashHex = DatatypeConverter.printHexBinary(hash);
 
-    @Override
-    public String sign(byte[] signatureToSign, UserRequest userRequest) {
-        SignableData dataToSign = new SignableData(signatureToSign);
-        dataToSign.setHashType(HashType.SHA256);
+        logger.debug("HashHEX is {}", hashHex);
 
-        request = SignatureRequest.newBuilder()
+        SignatureRequest signatureRequest = SignatureRequest.newBuilder()
                 .withRelyingPartyUUID(client.getRelyingPartyUUID())
                 .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
-                .withSignableData(dataToSign)
+                .withSignableHash(signableHash)
                 .withLanguage(Language.ENG)
                 .withDisplayText(midSignDisplayText)
                 .build();
 
-        return dataToSign.calculateVerificationCode();
+        SignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);
+
+        return SigningSessionInfo.newBuilder()
+                .withSessionID(response.getSessionID())
+                .withVerificationCode(signableHash.calculateVerificationCode())
+                .withDataToSign(dataToSignExternally)
+                .withContainer(container)
+                .build();
     }
 
+    private String storeFileInTempDirectory(MultipartFile uploadedFile) {
+        try {
+            File uploadedFileTempLocation = File.createTempFile("mid-demo-uploaded-", uploadedFile.getOriginalFilename());
+            String uploadedFileAbsolutePath = uploadedFileTempLocation.getAbsolutePath();
+
+            Files.write(Paths.get(uploadedFileAbsolutePath), uploadedFile.getBytes());
+
+            return uploadedFileAbsolutePath;
+
+        } catch (IOException e) {
+            throw new FileUploadException(e.getCause());
+        }
+    }
+
+
     @Override
-    public Map<String, String> sign() {
+    public SigningResult sign(SigningSessionInfo signingSessionInfo) {
         Map<String, String> result = new HashMap<>();
 
         MobileIdSignature mobileIdSignature;
-        try {
-            SignatureResponse response = client.getMobileIdConnector().sign(request);
 
-            SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(response.getSessionID(),
-                    "/mid-api/signature/session/{sessionId}");
 
-            mobileIdSignature = client.createMobileIdSignature(sessionStatus);
-        } catch (InternalServerErrorException | ResponseRetrievingException e) {
-            result.put("result", "Error getting response from cert-store/MSSP");
-            return result;
-        } catch (NotFoundException e) {
-            result.put("result", "Response not found");
-            return result;
-        } catch (BadRequestException e) {
-            result.put("result", "Request is invalid");
-            return result;
-        } catch (NotAuthorizedException e) {
-            result.put("result", "Request is unauthorized");
-            return result;
-        } catch (SessionTimeoutException e) {
-            result.put("result", "Session timeout");
-            return result;
-        } catch (NotMIDClientException e) {
-            result.put("result", "Given user has no active certificates and is not MID client");
-            return result;
-        } catch (ExpiredException e) {
-            result.put("result", "MSSP transaction timed out");
-            return result;
-        } catch (UserCancellationException e) {
-            result.put("result", "User cancelled the operation");
-            return result;
-        } catch (MIDNotReadyException e) {
-            result.put("result", "Mobile-ID not ready");
-            return result;
-        } catch (SimNotAvailableException e) {
-            result.put("result", "Sim not available");
-            return result;
-        } catch (DeliveryException e) {
-            result.put("result", "SMS sending error");
-            return result;
-        } catch (InvalidCardResponseException e) {
-            result.put("result", "Invalid response from card");
-            return result;
-        } catch (SignatureHashMismatchException e) {
-            result.put("result", "Hash does not match with certificate type");
-            return result;
-        } catch (RuntimeException e) {
-            result.put("result", e.getMessage());
-            return result;
-        }
+        SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(signingSessionInfo.getSessionID(),
+                "/mid-api/signature/session/{sessionId}");
 
-        Signature signature = dataToSign.finalize(mobileIdSignature.getValue());
-        container.addSignature(signature);
+        mobileIdSignature = client.createMobileIdSignature(sessionStatus);
 
-        String filePath  = null;
+        Signature signature = signingSessionInfo.getDataToSign().finalize(mobileIdSignature.getValue());
+        signingSessionInfo.getContainer().addSignature(signature);
+
+        String filePath = null;
 
         try {
-            File containerFile = File.createTempFile("mid-demo-", ".asice");
+            File containerFile = File.createTempFile("mid-demo-container-", ".asice");
             filePath = containerFile.getAbsolutePath();
-            container.saveAsFile(filePath);
+            signingSessionInfo.getContainer().saveAsFile(filePath);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new MidSignException(e);
         }
 
-        result.put("result", "Signing successful");
-        result.put("isValid", isSignatureValid(signature));
-        result.put("timestamp", "Signed on: " + signature.getTimeStampCreationTime().toString());
-        result.put("filename", "Container was saved to: " + filePath);
+        return SigningResult.newBuilder()
+                .withResult("Signing successful")
+                .withValid(signature.validateSignature().isValid())
+                .withTimestamp(signature.getTimeStampCreationTime())
+                .withContainerFilePath(filePath)
+                .build();
 
-        return result;
     }
 
-    private String isSignatureValid(Signature signature) {
-        if (signature.validateSignature().isValid()) {
-            return "Signature is valid";
-        } else {
-            return "Signature is not valid";
-        }
-    }
 }

@@ -1,52 +1,44 @@
 package ee.sk.mid.services;
 
 import ee.sk.mid.*;
-import ee.sk.mid.exception.*;
+import ee.sk.mid.exception.MidAuthException;
+import ee.sk.mid.model.AuthenticationSessionInfo;
 import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.AuthenticationRequest;
 import ee.sk.mid.rest.dao.response.AuthenticationResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
 
 @Service
 public class MobileIdAuthenticationServiceImpl implements MobileIdAuthenticationService {
 
-    @Value("${mid.relyingPartyUuid}")
-    private String midRelyingPartyUuid;
-
-    @Value("${mid.relyingPartyName}")
-    private String midRelyingPartyName;
-
-    @Value("${mid.applicationProvider.host}")
-    private String midApplicationProviderHost;
-
     @Value("${mid.auth.displayText}")
     private String midAuthDisplayText;
 
+    @Autowired
     private MobileIdClient client;
-    private AuthenticationRequest request;
 
-    @PostConstruct
-    public void init() {
-        client = MobileIdClient.newBuilder()
-                .withRelyingPartyUUID(midRelyingPartyUuid)
-                .withRelyingPartyName(midRelyingPartyName)
-                .withHostUrl(midApplicationProviderHost)
+
+    @Override
+    public AuthenticationSessionInfo startAuthentication(UserRequest userRequest) {
+        MobileIdAuthenticationHash authenticationHash = MobileIdAuthenticationHash.generateRandomHashOfDefaultType();
+
+        return AuthenticationSessionInfo.newBuilder()
+                .withUserRequest(userRequest)
+                .withAuthenticationHash(authenticationHash)
+                .withVerificationCode(authenticationHash.calculateVerificationCode())
                 .build();
     }
 
     @Override
-    public MobileIdAuthenticationHash authenticate(UserRequest userRequest) {
-        MobileIdAuthenticationHash authenticationHash = MobileIdAuthenticationHash.generateRandomHashOfDefaultType();
+    public AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo) {
 
-        request = AuthenticationRequest.newBuilder()
+        UserRequest userRequest = authenticationSessionInfo.getUserRequest();
+        MobileIdAuthenticationHash authenticationHash = authenticationSessionInfo.getAuthenticationHash();
+
+        AuthenticationRequest request = AuthenticationRequest.newBuilder()
                 .withRelyingPartyUUID(client.getRelyingPartyUUID())
                 .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
@@ -55,12 +47,6 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .withLanguage(Language.ENG)
                 .withDisplayText(midAuthDisplayText)
                 .build();
-
-        return authenticationHash;
-    }
-
-    @Override
-    public String authenticate(MobileIdAuthenticationHash authenticationHash) {
 
         MobileIdAuthenticationResult authenticationResult;
         try {
@@ -73,44 +59,15 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
             AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
             authenticationResult = validator.validate(authentication);
 
-            if (!authenticationResult.isValid()) {
-                return "Invalid authentication. " + String.join(", ", authenticationResult.getErrors());
-            }
-        } catch (ParameterMissingException e) {
-            return "Input parameters are missing";
-        } catch (InternalServerErrorException | ResponseRetrievingException e) {
-            return "Error getting response from cert-store/MSSP";
-        } catch (NotFoundException e) {
-            return "Response not found ";
-        } catch (BadRequestException e) {
-            return "Request is invalid";
-        } catch (NotAuthorizedException e) {
-            return "Request is unauthorized" ;
-        } catch (SessionTimeoutException e) {
-            return "Session timeout";
-        } catch (NotMIDClientException e) {
-            return "Given user has no active certificates and is not M-ID client";
-        } catch (ExpiredException e) {
-            return "MSSP transaction timed out";
-        } catch (UserCancellationException e) {
-            return "User cancelled the operation";
-        } catch (MIDNotReadyException e) {
-            return "Mobile-ID not ready";
-        } catch (SimNotAvailableException e) {
-            return "Sim not available";
-        } catch (DeliveryException e) {
-            return "SMS sending error";
-        } catch (InvalidCardResponseException e) {
-            return "Invalid response from card";
-        } catch (SignatureHashMismatchException e) {
-            return "Hash does not match with certificate type";
-        } catch (RuntimeException e) {
-            return e.getMessage();
+        } catch (Exception e) {
+            throw new MidAuthException(e);
         }
 
-        AuthenticationIdentity person = authenticationResult.getAuthenticationIdentity();
+        if (!authenticationResult.isValid()) {
+            throw new MidAuthException(authenticationResult.getErrors());
+        }
 
-        return String.format("Authentication successful. Welcome %s %s (%s) from %s",
-                person.getGivenName(), person.getSurName(), person.getIdentityCode(), person.getCountry());
+        return authenticationResult.getAuthenticationIdentity();
+
     }
 }

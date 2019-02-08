@@ -47,14 +47,14 @@
 
 <div class="alert-box">
     <div class="alert alert-secondary" role="alert">
-        <h4 class="alert-heading text-center" th:text="${result}"></h4>
-        <h5 th:text="${isValid}" class="text-center"></h5>
-        <h6 th:text="${timestamp}" class="text-center"></h6>
-        <h6 th:text="${filename}" class="text-center"></h6>
+
+        <h4 class="alert-heading text-center">Authentication successful</h4>
+
+        <h6 th:text="${'Welcome ' + person.givenName + ' ' + person.surName + '!'}" class="text-center"></h6>
+        <h6 th:text="${'ID code:' + person.country + person.identityCode}" class="text-center"></h6>
     </div>
 </div>
 
 <script th:src="@{/js/bootstrap.js}"></script>
 </body>
-
 </html>

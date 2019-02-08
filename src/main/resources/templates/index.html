@@ -142,17 +142,21 @@
             <label for="inputSignPhone">Phone number (+37XXXXXXXX)</label>
             <input type="text" th:field="*{phoneNumber}" class="form-control" id="inputSignPhone">
             <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" style="color:red">
-                inputSignPhone Error </div>
+                phoneNumber Error </div>
         </div>
         <div class="form-group">
             <label for="inputSignIdentityNumber">National identity number</label>
             <input type="text" th:field="*{nationalIdentityNumber}" class="form-control" id="inputSignIdentityNumber">
             <div th:if="${#fields.hasErrors('nationalIdentityNumber')}" th:errors="*{nationalIdentityNumber}" style="color:red">
-                inputSignIdentityNumber Error </div>
+                nationalIdentityNumber Error </div>
         </div>
         <div class="form-group">
             <label for="document">Document to sign</label>
-            <input type="file" name="file" class="form-control" id="document">
+            <input type="file" th:field="*{file}" class="form-control" id="document">
+
+            <div th:if="${#fields.hasErrors('file')}" th:errors="*{file}" style="color:red">
+                file Error </div>
+
         </div>
         <button type="submit" value="submit" class="btn btn-primary float-right">Sign</button>
     </form>
@@ -178,6 +182,11 @@
         document.getElementById('authentication').classList.remove("active");
         document.getElementById('signature').classList.add("active");
     }
+
+    if (window.location.href.indexOf('sign') > -1) {
+        showSigning();
+    }
+
 </script>
 </body>
 
