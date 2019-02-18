@@ -42,11 +42,15 @@
             <artifactId>digidoc4j</artifactId>
             <version>3.0.0</version>
         </dependency>
+
+        <!-- TODO: switch back to SK published version 1.1 before creating pull request -->
+        <!-- JITPACK takes this commit tag from github and builds it -->
         <dependency>
-            <groupId>ee.sk.mid</groupId>
+            <groupId>com.github.aasaru</groupId>
             <artifactId>mid-rest-java-client</artifactId>
-            <version>1.0</version>
+            <version>c2a0fae</version>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -57,4 +61,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+
+        <!-- TODO: remove jitpack repository before creating pull request -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>Maven Plugin Repository</name>
+            <url>http://repo1.maven.org/maven2</url>
+        </pluginRepository>
+    </pluginRepositories>
+
 </project>
