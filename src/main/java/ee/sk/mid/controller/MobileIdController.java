@@ -1,18 +1,48 @@
 package ee.sk.mid.controller;
 
+/*-
+ * #%L
+ * Mobile ID sample Java client
+ * %%
+ * Copyright (C) 2018 - 2019 SK ID Solutions AS
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-3.0.html>.
+ * #L%
+ */
+
+import javax.validation.Valid;
+
 import ee.sk.mid.AuthenticationIdentity;
 import ee.sk.mid.exception.FileUploadException;
 import ee.sk.mid.exception.MidAuthException;
-import ee.sk.mid.model.*;
+import ee.sk.mid.model.AuthenticationSessionInfo;
+import ee.sk.mid.model.SigningResult;
+import ee.sk.mid.model.SigningSessionInfo;
+import ee.sk.mid.model.UserMidSession;
+import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.services.MobileIdAuthenticationService;
 import ee.sk.mid.services.MobileIdSignatureService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
-
-import javax.validation.Valid;
 
 @RestController
 public class MobileIdController {
