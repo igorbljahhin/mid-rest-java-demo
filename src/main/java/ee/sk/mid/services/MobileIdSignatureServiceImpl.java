@@ -1,6 +1,22 @@
 package ee.sk.mid.services;
 
-import ee.sk.mid.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.bind.DatatypeConverter;
+
+import ee.sk.mid.DigestCalculator;
+import ee.sk.mid.DisplayTextFormat;
+import ee.sk.mid.HashType;
+import ee.sk.mid.Language;
+import ee.sk.mid.MobileIdClient;
+import ee.sk.mid.MobileIdSignature;
+import ee.sk.mid.SignableHash;
 import ee.sk.mid.exception.FileUploadException;
 import ee.sk.mid.exception.MidSignException;
 import ee.sk.mid.model.SigningResult;
@@ -11,22 +27,20 @@ import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
 import eu.europa.esig.dss.MimeType;
 import org.apache.commons.codec.binary.Base64;
-import org.digidoc4j.*;
+import org.digidoc4j.Configuration;
+import org.digidoc4j.Container;
+import org.digidoc4j.ContainerBuilder;
+import org.digidoc4j.DataToSign;
+import org.digidoc4j.DigestAlgorithm;
+import org.digidoc4j.Signature;
+import org.digidoc4j.SignatureBuilder;
+import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
@@ -79,13 +93,12 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
         logger.debug("HashHEX is {}", hashHex);
 
         SignatureRequest signatureRequest = SignatureRequest.newBuilder()
-                .withRelyingPartyUUID(client.getRelyingPartyUUID())
-                .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withSignableHash(signableHash)
                 .withLanguage(Language.ENG)
                 .withDisplayText(midSignDisplayText)
+                .withDisplayTextFormat(DisplayTextFormat.GSM7)
                 .build();
 
         SignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);

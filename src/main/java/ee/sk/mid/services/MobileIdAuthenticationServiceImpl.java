@@ -1,6 +1,13 @@
 package ee.sk.mid.services;
 
-import ee.sk.mid.*;
+import ee.sk.mid.AuthenticationIdentity;
+import ee.sk.mid.AuthenticationResponseValidator;
+import ee.sk.mid.DisplayTextFormat;
+import ee.sk.mid.Language;
+import ee.sk.mid.MobileIdAuthentication;
+import ee.sk.mid.MobileIdAuthenticationHash;
+import ee.sk.mid.MobileIdAuthenticationResult;
+import ee.sk.mid.MobileIdClient;
 import ee.sk.mid.exception.MidAuthException;
 import ee.sk.mid.model.AuthenticationSessionInfo;
 import ee.sk.mid.model.UserRequest;
@@ -39,13 +46,12 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
         MobileIdAuthenticationHash authenticationHash = authenticationSessionInfo.getAuthenticationHash();
 
         AuthenticationRequest request = AuthenticationRequest.newBuilder()
-                .withRelyingPartyUUID(client.getRelyingPartyUUID())
-                .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withAuthenticationHash(authenticationHash)
                 .withLanguage(Language.ENG)
                 .withDisplayText(midAuthDisplayText)
+                .withDisplayTextFormat(DisplayTextFormat.GSM7)
                 .build();
 
         MobileIdAuthenticationResult authenticationResult;
