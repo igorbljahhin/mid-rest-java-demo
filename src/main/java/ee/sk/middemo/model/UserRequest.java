@@ -1,4 +1,4 @@
-package ee.sk.mid.model;
+package ee.sk.middemo.model;
 
 /*-
  * #%L

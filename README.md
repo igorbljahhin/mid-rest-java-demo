@@ -11,7 +11,7 @@ Option 2. run main method of `MidRestJavaDemoApplication`
 
 ## How to use
 
-Start the application, open [http://localhost:8080/](http://localhost:8080/)
+Start the application, open [http://localhost:8081/](http://localhost:8081/)
 and authenticate or sign a document using 
 [test numbers](https://github.com/SK-EID/MID/wiki/Test-number-for-automated-testing-in-DEMO).
 

@@ -1,4 +1,4 @@
-package ee.sk.mid;
+package ee.sk.middemo;
 
 /*-
  * #%L
@@ -22,7 +22,8 @@ package ee.sk.mid;
  * #L%
  */
 
-import ee.sk.mid.model.UserMidSession;
+import ee.sk.mid.MobileIdClient;
+import ee.sk.middemo.model.UserMidSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

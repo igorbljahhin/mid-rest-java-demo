@@ -1,4 +1,4 @@
-package ee.sk.mid.exception;
+package ee.sk.middemo.exception;
 
 /*-
  * #%L

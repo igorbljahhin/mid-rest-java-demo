@@ -1,4 +1,4 @@
-package ee.sk.mid.controller;
+package ee.sk.middemo.controller;
 
 /*-
  * #%L
@@ -25,15 +25,15 @@ package ee.sk.mid.controller;
 import javax.validation.Valid;
 
 import ee.sk.mid.AuthenticationIdentity;
-import ee.sk.mid.exception.FileUploadException;
-import ee.sk.mid.exception.MidAuthException;
-import ee.sk.mid.model.AuthenticationSessionInfo;
-import ee.sk.mid.model.SigningResult;
-import ee.sk.mid.model.SigningSessionInfo;
-import ee.sk.mid.model.UserMidSession;
-import ee.sk.mid.model.UserRequest;
-import ee.sk.mid.services.MobileIdAuthenticationService;
-import ee.sk.mid.services.MobileIdSignatureService;
+import ee.sk.middemo.exception.FileUploadException;
+import ee.sk.middemo.exception.MidAuthException;
+import ee.sk.middemo.model.AuthenticationSessionInfo;
+import ee.sk.middemo.model.SigningResult;
+import ee.sk.middemo.model.SigningSessionInfo;
+import ee.sk.middemo.model.UserMidSession;
+import ee.sk.middemo.model.UserRequest;
+import ee.sk.middemo.services.MobileIdAuthenticationService;
+import ee.sk.middemo.services.MobileIdSignatureService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;

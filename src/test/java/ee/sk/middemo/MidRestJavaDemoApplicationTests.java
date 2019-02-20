@@ -1,4 +1,4 @@
-package ee.sk.mid.exception;
+package ee.sk.middemo;
 
 /*-
  * #%L
@@ -22,13 +22,16 @@ package ee.sk.mid.exception;
  * #L%
  */
 
-public class MidSignException extends RuntimeException {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
-    public MidSignException(Exception e) {
-        super(e);
-    }
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class MidRestJavaDemoApplicationTests {
 
-    public MidSignException(String message) {
-        super(message);
+    @Test
+    public void contextLoads() {
     }
 }

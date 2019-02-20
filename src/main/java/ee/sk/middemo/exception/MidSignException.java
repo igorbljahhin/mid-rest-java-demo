@@ -1,4 +1,4 @@
-package ee.sk.mid.services;
+package ee.sk.middemo.exception;
 
 /*-
  * #%L
@@ -22,13 +22,13 @@ package ee.sk.mid.services;
  * #L%
  */
 
-import ee.sk.mid.AuthenticationIdentity;
-import ee.sk.mid.model.AuthenticationSessionInfo;
-import ee.sk.mid.model.UserRequest;
+public class MidSignException extends RuntimeException {
 
-public interface MobileIdAuthenticationService {
+    public MidSignException(Exception e) {
+        super(e);
+    }
 
-    AuthenticationSessionInfo startAuthentication(UserRequest userRequest);
-
-    AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo);
+    public MidSignException(String message) {
+        super(message);
+    }
 }

@@ -1,4 +1,4 @@
-package ee.sk.mid.services;
+package ee.sk.middemo.exception;
 
 /*-
  * #%L
@@ -22,13 +22,26 @@ package ee.sk.mid.services;
  * #L%
  */
 
-import ee.sk.mid.model.SigningResult;
-import ee.sk.mid.model.SigningSessionInfo;
-import ee.sk.mid.model.UserRequest;
+import java.util.List;
 
-public interface MobileIdSignatureService {
+import ee.sk.mid.exception.UserCancellationException;
 
-    SigningSessionInfo sendSignatureRequest(UserRequest userRequest);
+public class MidAuthException extends RuntimeException {
 
-    SigningResult sign(SigningSessionInfo signingSessionInfo);
+    public MidAuthException(Exception e) {
+        super(e);
+    }
+
+    public MidAuthException(UserCancellationException e) {
+
+    }
+
+    public MidAuthException(List<String> errors) {
+        super("Invalid authentication. " + String.join(", ", errors));
+    }
+
+    public String getMessage() {
+        return this.getCause().getMessage();
+    }
+
 }

@@ -1,4 +1,4 @@
-package ee.sk.mid.exception;
+package ee.sk.middemo.services;
 
 /*-
  * #%L
@@ -22,24 +22,11 @@ package ee.sk.mid.exception;
  * #L%
  */
 
-import java.util.List;
+import java.security.cert.X509Certificate;
 
-public class MidAuthException extends RuntimeException {
+import ee.sk.middemo.model.UserRequest;
 
-    public MidAuthException(Exception e) {
-        super(e);
-    }
+public interface MobileIdCertificateService {
 
-    public MidAuthException(UserCancellationException e) {
-
-    }
-
-    public MidAuthException(List<String> errors) {
-        super("Invalid authentication. " + String.join(", ", errors));
-    }
-
-    public String getMessage() {
-        return this.getCause().getMessage();
-    }
-
+    X509Certificate getCertificate(UserRequest userRequest);
 }

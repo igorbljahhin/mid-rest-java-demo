@@ -1,4 +1,4 @@
-package ee.sk.mid.services;
+package ee.sk.middemo.services;
 
 /*-
  * #%L
@@ -22,11 +22,13 @@ package ee.sk.mid.services;
  * #L%
  */
 
-import java.security.cert.X509Certificate;
+import ee.sk.mid.AuthenticationIdentity;
+import ee.sk.middemo.model.AuthenticationSessionInfo;
+import ee.sk.middemo.model.UserRequest;
 
-import ee.sk.mid.model.UserRequest;
+public interface MobileIdAuthenticationService {
 
-public interface MobileIdCertificateService {
+    AuthenticationSessionInfo startAuthentication(UserRequest userRequest);
 
-    X509Certificate getCertificate(UserRequest userRequest);
+    AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo);
 }

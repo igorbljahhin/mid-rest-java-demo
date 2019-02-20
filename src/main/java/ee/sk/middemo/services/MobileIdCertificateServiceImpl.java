@@ -1,4 +1,4 @@
-package ee.sk.mid.services;
+package ee.sk.middemo.services;
 
 /*-
  * #%L
@@ -25,9 +25,9 @@ package ee.sk.mid.services;
 import java.security.cert.X509Certificate;
 
 import ee.sk.mid.MobileIdClient;
-import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.request.CertificateRequest;
 import ee.sk.mid.rest.dao.response.CertificateChoiceResponse;
+import ee.sk.middemo.model.UserRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

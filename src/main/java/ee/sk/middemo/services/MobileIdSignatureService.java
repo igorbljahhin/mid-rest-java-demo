@@ -1,4 +1,4 @@
-package ee.sk.mid;
+package ee.sk.middemo.services;
 
 /*-
  * #%L
@@ -22,13 +22,13 @@ package ee.sk.mid;
  * #L%
  */
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import ee.sk.middemo.model.SigningResult;
+import ee.sk.middemo.model.SigningSessionInfo;
+import ee.sk.middemo.model.UserRequest;
 
-@SpringBootApplication
-public class MidRestJavaDemoApplication {
+public interface MobileIdSignatureService {
 
-    public static void main(String[] args) {
-        SpringApplication.run(MidRestJavaDemoApplication.class, args);
-    }
+    SigningSessionInfo sendSignatureRequest(UserRequest userRequest);
+
+    SigningResult sign(SigningSessionInfo signingSessionInfo);
 }

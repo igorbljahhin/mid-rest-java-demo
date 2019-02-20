@@ -1,4 +1,4 @@
-package ee.sk.mid.model;
+package ee.sk.middemo.model;
 
 /*-
  * #%L
@@ -22,11 +22,11 @@ package ee.sk.mid.model;
  * #L%
  */
 
-import ee.sk.mid.MobileIdAuthenticationHash;
+import ee.sk.mid.MobileIdAuthenticationHashToSign;
 
 public class AuthenticationSessionInfo {
 
-    private MobileIdAuthenticationHash authenticationHash;
+    private MobileIdAuthenticationHashToSign authenticationHash;
     private String verificationCode;
     private UserRequest userRequest;
 
@@ -36,7 +36,7 @@ public class AuthenticationSessionInfo {
         this.userRequest = builder.userRequest;
     }
 
-    public MobileIdAuthenticationHash getAuthenticationHash() {
+    public MobileIdAuthenticationHashToSign getAuthenticationHash() {
         return authenticationHash;
     }
 
@@ -55,12 +55,12 @@ public class AuthenticationSessionInfo {
     public static class Builder {
         private String verificationCode;
         private UserRequest userRequest;
-        private MobileIdAuthenticationHash authenticationHash;
+        private MobileIdAuthenticationHashToSign authenticationHash;
 
         private Builder() {
         }
 
-        public Builder withAuthenticationHash(MobileIdAuthenticationHash authenticationHash) {
+        public Builder withAuthenticationHash(MobileIdAuthenticationHashToSign authenticationHash) {
             this.authenticationHash = authenticationHash;
             return this;
         }

@@ -1,4 +1,4 @@
-package ee.sk.mid.services;
+package ee.sk.middemo.services;
 
 /*-
  * #%L
@@ -24,34 +24,26 @@ package ee.sk.mid.services;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
 
-import javax.xml.bind.DatatypeConverter;
-
-import ee.sk.mid.DigestCalculator;
 import ee.sk.mid.DisplayTextFormat;
+import ee.sk.mid.HashToSign;
 import ee.sk.mid.HashType;
 import ee.sk.mid.Language;
 import ee.sk.mid.MobileIdClient;
 import ee.sk.mid.MobileIdSignature;
-import ee.sk.mid.SignableHash;
-import ee.sk.mid.exception.FileUploadException;
-import ee.sk.mid.exception.MidSignException;
-import ee.sk.mid.model.SigningResult;
-import ee.sk.mid.model.SigningSessionInfo;
-import ee.sk.mid.model.UserRequest;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
-import eu.europa.esig.dss.MimeType;
-import org.apache.commons.codec.binary.Base64;
+import ee.sk.middemo.exception.FileUploadException;
+import ee.sk.middemo.exception.MidSignException;
+import ee.sk.middemo.model.SigningResult;
+import ee.sk.middemo.model.SigningSessionInfo;
+import ee.sk.middemo.model.UserRequest;
 import org.digidoc4j.Configuration;
 import org.digidoc4j.Container;
 import org.digidoc4j.ContainerBuilder;
+import org.digidoc4j.DataFile;
 import org.digidoc4j.DataToSign;
 import org.digidoc4j.DigestAlgorithm;
 import org.digidoc4j.Signature;
@@ -84,15 +76,14 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
     @Override
     public SigningSessionInfo sendSignatureRequest(UserRequest userRequest) {
-        String uploadedFileAbsolutePath = storeFileInTempDirectory(userRequest.getFile());
-        MimeType mimeType = MimeType.fromFileName(uploadedFileAbsolutePath);
+        DataFile uploadedFile = getUploadedDataFile(userRequest.getFile());
 
-        Configuration configuration = new Configuration(Configuration.Mode.TEST); // TODO move to configuration
+        Configuration configuration = new Configuration(Configuration.Mode.TEST);
 
         Container container = ContainerBuilder
                 .aContainer()
                 .withConfiguration(configuration)
-                .withDataFile(uploadedFileAbsolutePath, mimeType.getMimeTypeString())
+                .withDataFile(uploadedFile)
                 .build();
 
         X509Certificate signingCert = certificateService.getCertificate(userRequest);
@@ -105,19 +96,15 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
                 .buildDataToSign();
 
 
-        byte[] hash = DigestCalculator.calculateDigest(dataToSignExternally.getDataToSign(), HashType.SHA256);
-        SignableHash signableHash = new SignableHash(); // TODO make setHash() public and add builder!
-        signableHash.setHashInBase64(Base64.encodeBase64String(hash)); // insteaed of hash
-        signableHash.setHashType(HashType.SHA256);
-
-        String hashHex = DatatypeConverter.printHexBinary(hash);
-
-        logger.debug("HashHEX is {}", hashHex);
+        HashToSign hashToSign = HashToSign.newBuilder()
+            .withDataToHash(dataToSignExternally.getDataToSign())
+            .withHashType(HashType.SHA256)
+            .build();
 
         SignatureRequest signatureRequest = SignatureRequest.newBuilder()
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
-                .withSignableHash(signableHash)
+                .withHashToSign(hashToSign)
                 .withLanguage(Language.ENG)
                 .withDisplayText(midSignDisplayText)
                 .withDisplayTextFormat(DisplayTextFormat.GSM7)
@@ -127,21 +114,15 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
         return SigningSessionInfo.newBuilder()
                 .withSessionID(response.getSessionID())
-                .withVerificationCode(signableHash.calculateVerificationCode())
+                .withVerificationCode(hashToSign.calculateVerificationCode())
                 .withDataToSign(dataToSignExternally)
                 .withContainer(container)
                 .build();
     }
 
-    private String storeFileInTempDirectory(MultipartFile uploadedFile) {
+    private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
         try {
-            File uploadedFileTempLocation = File.createTempFile("mid-demo-uploaded-", uploadedFile.getOriginalFilename());
-            String uploadedFileAbsolutePath = uploadedFileTempLocation.getAbsolutePath();
-
-            Files.write(Paths.get(uploadedFileAbsolutePath), uploadedFile.getBytes());
-
-            return uploadedFileAbsolutePath;
-
+            return new DataFile(uploadedFile.getInputStream(), uploadedFile.getOriginalFilename(), uploadedFile.getContentType());
         } catch (IOException e) {
             throw new FileUploadException(e.getCause());
         }
@@ -150,20 +131,14 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
     @Override
     public SigningResult sign(SigningSessionInfo signingSessionInfo) {
-        Map<String, String> result = new HashMap<>();
+        SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
 
-        MobileIdSignature mobileIdSignature;
-
-
-        SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(signingSessionInfo.getSessionID(),
-                "/mid-api/signature/session/{sessionId}");
-
-        mobileIdSignature = client.createMobileIdSignature(sessionStatus);
+        MobileIdSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
 
         Signature signature = signingSessionInfo.getDataToSign().finalize(mobileIdSignature.getValue());
         signingSessionInfo.getContainer().addSignature(signature);
 
-        String filePath = null;
+        String filePath;
 
         try {
             File containerFile = File.createTempFile("mid-demo-container-", ".asice");
