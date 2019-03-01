@@ -22,13 +22,28 @@ package ee.sk.middemo.exception;
  * #L%
  */
 
-public class MidSignException extends RuntimeException {
+import java.util.List;
 
-    public MidSignException(Exception e) {
-        super(e);
+public class MidOperationException extends RuntimeException {
+
+    private String message;
+
+    public MidOperationException(String message) {
+        this.message = message;
     }
 
-    public MidSignException(String message) {
-        super(message);
+    public MidOperationException(String message, Throwable cause) {
+        super(cause);
+        this.message = message;
     }
+
+
+    public MidOperationException(List<String> errors) {
+        this.message = "MID service returned validation errors: " + String.join(", ", errors);
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
 }

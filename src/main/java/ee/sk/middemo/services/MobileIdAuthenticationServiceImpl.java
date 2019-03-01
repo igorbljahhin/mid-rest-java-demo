@@ -30,12 +30,20 @@ import ee.sk.mid.MobileIdAuthentication;
 import ee.sk.mid.MobileIdAuthenticationHashToSign;
 import ee.sk.mid.MobileIdAuthenticationResult;
 import ee.sk.mid.MobileIdClient;
+import ee.sk.mid.exception.DeliveryException;
+import ee.sk.mid.exception.MidInternalErrorException;
+import ee.sk.mid.exception.MidSessionTimeoutException;
+import ee.sk.mid.exception.NotMidClientException;
+import ee.sk.mid.exception.PhoneNotAvailableException;
+import ee.sk.mid.exception.UserCancellationException;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.AuthenticationRequest;
 import ee.sk.mid.rest.dao.response.AuthenticationResponse;
-import ee.sk.middemo.exception.MidAuthException;
+import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.AuthenticationSessionInfo;
 import ee.sk.middemo.model.UserRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -43,12 +51,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class MobileIdAuthenticationServiceImpl implements MobileIdAuthenticationService {
 
+    Logger logger = LoggerFactory.getLogger(MobileIdSignatureServiceImpl.class);
+
     @Value("${mid.auth.displayText}")
     private String midAuthDisplayText;
 
     @Autowired
     private MobileIdClient client;
-
 
     @Override
     public AuthenticationSessionInfo startAuthentication(UserRequest userRequest) {
@@ -77,24 +86,42 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .build();
 
         MobileIdAuthenticationResult authenticationResult;
+
         try {
             AuthenticationResponse response = client.getMobileIdConnector().authenticate(request);
-            SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSessionStatus(response.getSessionID(),
-                    "/mid-api/authentication/session/{sessionId}");
+            SessionStatus sessionStatus = client.getSessionStatusPoller()
+                .fetchFinalAuthenticationSessionStatus(response.getSessionID());
             MobileIdAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash);
 
             AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
             authenticationResult = validator.validate(authentication);
 
-        } catch (Exception e) {
-            throw new MidAuthException(e);
+        }
+        catch (UserCancellationException e) {
+            logger.info("User cancelled operation");
+            throw new MidOperationException("User cancelled operation.");
+        }
+        catch (NotMidClientException e) {
+            logger.info("User is not a MID client or user's certificates are revoked");
+            throw new MidOperationException("User is not a MID client or user's certificates are revoked.");
+        }
+        catch (MidSessionTimeoutException e) {
+            logger.info("User did not type in PIN or communication error.");
+            throw new MidOperationException("User didn't type in PIN or communication error.");        }
+        catch (PhoneNotAvailableException | DeliveryException e) {
+            logger.info("Unable to reach phone/SIM card");
+            throw new MidOperationException("Communication error. Unable to reach phone.");
+        }
+        catch (MidInternalErrorException e) {
+            logger.warn("MID service returned internal error that cannot be handled locally.");
+            // navigate to error page
+            throw new MidOperationException("MID internal error", e);
         }
 
         if (!authenticationResult.isValid()) {
-            throw new MidAuthException(authenticationResult.getErrors());
+            throw new MidOperationException(authenticationResult.getErrors());
         }
 
         return authenticationResult.getAuthenticationIdentity();
-
     }
 }

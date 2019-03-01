@@ -26,7 +26,7 @@ import javax.validation.Valid;
 
 import ee.sk.mid.AuthenticationIdentity;
 import ee.sk.middemo.exception.FileUploadException;
-import ee.sk.middemo.exception.MidAuthException;
+import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.AuthenticationSessionInfo;
 import ee.sk.middemo.model.SigningResult;
 import ee.sk.middemo.model.SigningSessionInfo;
@@ -124,18 +124,31 @@ public class MobileIdController {
     }
 
     @ExceptionHandler(FileUploadException.class)
-    public String handleStorageFileNotFound(FileUploadException exc) {
-        return "error";
+    public ModelAndView handleFileUploadException(FileUploadException exception) {
+        ModelMap model = new ModelMap();
+
+        model.addAttribute("errorMessage", "File upload error");
+
+        return new ModelAndView("midOperationError", model);
     }
 
-
-    @ExceptionHandler(MidAuthException.class)
-    public ModelAndView handleException(MidAuthException exception) {
-
+    @ExceptionHandler(MidOperationException.class)
+    public ModelAndView handleMidOperationException(MidOperationException exception) {
         ModelMap model = new ModelMap();
 
         model.addAttribute("errorMessage", exception.getMessage());
 
-        return new ModelAndView("authenticationError", model);
+        return new ModelAndView("midOperationError", model);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ModelAndView handleMobileIdException(Exception exception) {
+        ModelMap model = new ModelMap();
+
+        model.addAttribute("errorMessage", exception.getMessage());
+
+        return new ModelAndView("error", model);
+    }
+
+
 }

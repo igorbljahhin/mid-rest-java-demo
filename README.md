@@ -18,12 +18,8 @@ and authenticate or sign a document using
 ### How to run tests with a real phone
 
 If you have Estonian or Lithuanian Mobile ID then you can run real-life tests with your
-own phone if you register your Mobile ID certificates in SK Demo environment.
-
-First register your certificates here: https://demo.sk.ee/MIDCertsReg/
-For this you have to log in with your Mobile ID.
-
-And then upload the obtained certs here: https://demo.sk.ee/upload_cert/
+own phone if you register your Mobile ID certificates in  [SK Demo environment](https://demo.sk.ee/MIDCertsReg/)
+You can also change the status of the certificates from there.
 
 After that you should be able to log in and sign (resulting signature is not legally valid)
 using your own phone number and national id code.

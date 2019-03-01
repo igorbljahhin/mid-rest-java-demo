@@ -151,7 +151,7 @@
                 nationalIdentityNumber Error </div>
         </div>
         <div class="form-group">
-            <label for="document">Document to sign</label>
+            <label for="document">Document to sign (max 10 MB)</label>
             <input type="file" th:field="*{file}" class="form-control" id="document">
 
             <div th:if="${#fields.hasErrors('file')}" th:errors="*{file}" style="color:red">

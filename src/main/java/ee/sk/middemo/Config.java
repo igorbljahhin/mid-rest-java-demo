@@ -49,6 +49,7 @@ public class Config {
                 .withRelyingPartyUUID(midRelyingPartyUuid)
                 .withRelyingPartyName(midRelyingPartyName)
                 .withHostUrl(midApplicationProviderHost)
+                .withLongPollingTimeoutSeconds(60)
                 .build();
     }
 

@@ -32,11 +32,17 @@ import ee.sk.mid.HashType;
 import ee.sk.mid.Language;
 import ee.sk.mid.MobileIdClient;
 import ee.sk.mid.MobileIdSignature;
+import ee.sk.mid.exception.DeliveryException;
+import ee.sk.mid.exception.MidInternalErrorException;
+import ee.sk.mid.exception.MidSessionTimeoutException;
+import ee.sk.mid.exception.NotMidClientException;
+import ee.sk.mid.exception.PhoneNotAvailableException;
+import ee.sk.mid.exception.UserCancellationException;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.SignatureRequest;
 import ee.sk.mid.rest.dao.response.SignatureResponse;
 import ee.sk.middemo.exception.FileUploadException;
-import ee.sk.middemo.exception.MidSignException;
+import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.SigningResult;
 import ee.sk.middemo.model.SigningSessionInfo;
 import ee.sk.middemo.model.UserRequest;
@@ -80,21 +86,18 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
         Configuration configuration = new Configuration(Configuration.Mode.TEST);
 
-        Container container = ContainerBuilder
-                .aContainer()
-                .withConfiguration(configuration)
-                .withDataFile(uploadedFile)
-                .build();
+        Container container = ContainerBuilder.aContainer()
+            .withConfiguration(configuration)
+            .withDataFile(uploadedFile)
+            .build();
 
         X509Certificate signingCert = certificateService.getCertificate(userRequest);
 
-        DataToSign dataToSignExternally = SignatureBuilder
-                .aSignature(container)
-                .withSigningCertificate(signingCert)
-                .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
-                .withSignatureProfile(SignatureProfile.LT)
-                .buildDataToSign();
-
+        DataToSign dataToSignExternally = SignatureBuilder.aSignature(container)
+            .withSigningCertificate(signingCert)
+            .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
+            .withSignatureProfile(SignatureProfile.LT)
+            .buildDataToSign();
 
         HashToSign hashToSign = HashToSign.newBuilder()
             .withDataToHash(dataToSignExternally.getDataToSign())
@@ -102,22 +105,22 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             .build();
 
         SignatureRequest signatureRequest = SignatureRequest.newBuilder()
-                .withPhoneNumber(userRequest.getPhoneNumber())
-                .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
-                .withHashToSign(hashToSign)
-                .withLanguage(Language.ENG)
-                .withDisplayText(midSignDisplayText)
-                .withDisplayTextFormat(DisplayTextFormat.GSM7)
-                .build();
+            .withPhoneNumber(userRequest.getPhoneNumber())
+            .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
+            .withHashToSign(hashToSign)
+            .withLanguage(Language.ENG)
+            .withDisplayText(midSignDisplayText)
+            .withDisplayTextFormat(DisplayTextFormat.GSM7)
+            .build();
 
         SignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);
 
         return SigningSessionInfo.newBuilder()
-                .withSessionID(response.getSessionID())
-                .withVerificationCode(hashToSign.calculateVerificationCode())
-                .withDataToSign(dataToSignExternally)
-                .withContainer(container)
-                .build();
+            .withSessionID(response.getSessionID())
+            .withVerificationCode(hashToSign.calculateVerificationCode())
+            .withDataToSign(dataToSignExternally)
+            .withContainer(container)
+            .build();
     }
 
     private DataFile getUploadedDataFile(MultipartFile uploadedFile) {
@@ -128,10 +131,10 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
         }
     }
 
-
     @Override
     public SigningResult sign(SigningSessionInfo signingSessionInfo) {
-        SessionStatus sessionStatus = client.getSessionStatusPoller().fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
+        SessionStatus sessionStatus = client.getSessionStatusPoller()
+            .fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
 
         MobileIdSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
 
@@ -145,16 +148,37 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             filePath = containerFile.getAbsolutePath();
             signingSessionInfo.getContainer().saveAsFile(filePath);
 
-        } catch (IOException e) {
-            throw new MidSignException(e);
+        }
+        catch (UserCancellationException e) {
+            logger.info("User cancelled operation");
+            throw new MidOperationException("User cancelled operation.");
+        }
+        catch (NotMidClientException e) {
+            logger.info("User is not a MID client or user's certificates are revoked");
+            throw new MidOperationException("User is not a MID client or user's certificates are revoked.");
+        }
+        catch (MidSessionTimeoutException e) {
+            logger.info("User did not type in PIN or communication error.");
+            throw new MidOperationException("User didn't type in PIN or communication error.");        }
+        catch (PhoneNotAvailableException | DeliveryException e) {
+            logger.info("Unable to reach phone/SIM card");
+            throw new MidOperationException("Communication error. Unable to reach phone.");
+        }
+        catch (MidInternalErrorException e) {
+            logger.warn("MID service returned internal error that cannot be handled locally.");
+            // navigate to error page
+            throw new MidOperationException("MID internal error", e);
+        }
+        catch (IOException e) {
+            throw new MidOperationException("Could not create container file.");
         }
 
         return SigningResult.newBuilder()
-                .withResult("Signing successful")
-                .withValid(signature.validateSignature().isValid())
-                .withTimestamp(signature.getTimeStampCreationTime())
-                .withContainerFilePath(filePath)
-                .build();
+            .withResult("Signing successful")
+            .withValid(signature.validateSignature().isValid())
+            .withTimestamp(signature.getTimeStampCreationTime())
+            .withContainerFilePath(filePath)
+            .build();
 
     }
 
