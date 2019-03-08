@@ -33,10 +33,14 @@ import ee.sk.mid.Language;
 import ee.sk.mid.MobileIdClient;
 import ee.sk.mid.MobileIdSignature;
 import ee.sk.mid.exception.DeliveryException;
+import ee.sk.mid.exception.InvalidUserConfigurationException;
 import ee.sk.mid.exception.MidInternalErrorException;
+import ee.sk.mid.exception.MidSessionNotFoundException;
 import ee.sk.mid.exception.MidSessionTimeoutException;
+import ee.sk.mid.exception.MissingOrInvalidParameterException;
 import ee.sk.mid.exception.NotMidClientException;
 import ee.sk.mid.exception.PhoneNotAvailableException;
+import ee.sk.mid.exception.UnauthorizedException;
 import ee.sk.mid.exception.UserCancellationException;
 import ee.sk.mid.rest.dao.SessionStatus;
 import ee.sk.mid.rest.dao.request.SignatureRequest;
@@ -93,6 +97,7 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
         X509Certificate signingCert = certificateService.getCertificate(userRequest);
 
+
         DataToSign dataToSignExternally = SignatureBuilder.aSignature(container)
             .withSigningCertificate(signingCert)
             .withSignatureDigestAlgorithm(DigestAlgorithm.SHA256)
@@ -133,44 +138,57 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
     @Override
     public SigningResult sign(SigningSessionInfo signingSessionInfo) {
-        SessionStatus sessionStatus = client.getSessionStatusPoller()
-            .fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
-
-        MobileIdSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
-
-        Signature signature = signingSessionInfo.getDataToSign().finalize(mobileIdSignature.getValue());
-        signingSessionInfo.getContainer().addSignature(signature);
-
         String filePath;
+        Signature signature;
 
         try {
+            SessionStatus sessionStatus = client.getSessionStatusPoller()
+                .fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
+
+            MobileIdSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
+
+            signature = signingSessionInfo.getDataToSign().finalize(mobileIdSignature.getValue());
+            signingSessionInfo.getContainer().addSignature(signature);
+
             File containerFile = File.createTempFile("mid-demo-container-", ".asice");
             filePath = containerFile.getAbsolutePath();
             signingSessionInfo.getContainer().saveAsFile(filePath);
 
         }
         catch (UserCancellationException e) {
-            logger.info("User cancelled operation");
-            throw new MidOperationException("User cancelled operation.");
+            logger.info("User cancelled operation from his/her phone.");
+            throw new MidOperationException("You cancelled operation from your phone.");
         }
         catch (NotMidClientException e) {
             logger.info("User is not a MID client or user's certificates are revoked");
-            throw new MidOperationException("User is not a MID client or user's certificates are revoked.");
+            throw new MidOperationException("You are not a Mobile-ID client or your Mobile-ID certificates are revoked. Please contact your mobile operator.");
         }
         catch (MidSessionTimeoutException e) {
-            logger.info("User did not type in PIN or communication error.");
-            throw new MidOperationException("User didn't type in PIN or communication error.");        }
-        catch (PhoneNotAvailableException | DeliveryException e) {
-            logger.info("Unable to reach phone/SIM card");
-            throw new MidOperationException("Communication error. Unable to reach phone.");
+            logger.info("User did not type in PIN code or communication error.");
+            throw new MidOperationException("You didn't type in PIN code into your phone or there was a communication error.");
+        }
+        catch (PhoneNotAvailableException e) {
+            logger.info("Unable to reach phone/SIM card. User needs to check if phone has coverage.");
+            throw new MidOperationException("Unable to reach your phone. Please make sure your phone has mobile coverage.");
+        }
+        catch (DeliveryException e) {
+            logger.info("Error communicating with the phone/SIM card.");
+            throw new MidOperationException("Communication error. Unable to reach your phone.");
+        }
+        catch (InvalidUserConfigurationException e) {
+            logger.info("Mobile-ID configuration on user's SIM card differs from what is configured on service provider side. User needs to contact his/her mobile operator.");
+            throw new MidOperationException("Mobile-ID configuration on your SIM card differs from what is configured on service provider's side. Please contact your mobile operator.");
+        }
+        catch (MidSessionNotFoundException | MissingOrInvalidParameterException | UnauthorizedException e) {
+            logger.error("Integrator-side error with MID integration or configuration", e);
+            throw new MidOperationException("Client side error with mobile-ID integration.", e);
         }
         catch (MidInternalErrorException e) {
             logger.warn("MID service returned internal error that cannot be handled locally.");
-            // navigate to error page
             throw new MidOperationException("MID internal error", e);
         }
         catch (IOException e) {
-            throw new MidOperationException("Could not create container file.");
+            throw new MidOperationException("Could not create container file.", e);
         }
 
         return SigningResult.newBuilder()

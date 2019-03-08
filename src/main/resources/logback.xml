@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
+<configuration debug="true">
 
     <appender name="Console"
               class="ch.qos.logback.core.ConsoleAppender">
@@ -17,6 +17,10 @@
     </root>
 
     <logger name="ee.sk" level="debug" additivity="false">
+        <appender-ref ref="Console" />
+    </logger>
+
+    <logger name="ee.sk.mid.rest.LoggingFilter" level="trace" additivity="false">
         <appender-ref ref="Console" />
     </logger>
 

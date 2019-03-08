@@ -48,7 +48,7 @@
         <dependency>
             <groupId>com.github.aasaru</groupId>
             <artifactId>mid-rest-java-client</artifactId>
-            <version>8a5658b</version>
+            <version>e36f471</version>
         </dependency>
 
     </dependencies>

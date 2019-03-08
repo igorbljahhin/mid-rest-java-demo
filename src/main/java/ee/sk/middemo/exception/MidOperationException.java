@@ -34,7 +34,7 @@ public class MidOperationException extends RuntimeException {
 
     public MidOperationException(String message, Throwable cause) {
         super(cause);
-        this.message = message;
+        this.message = message + " Cause:" +  cause.getMessage();
     }
 
 

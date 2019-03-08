@@ -34,6 +34,8 @@ import ee.sk.middemo.model.UserMidSession;
 import ee.sk.middemo.model.UserRequest;
 import ee.sk.middemo.services.MobileIdAuthenticationService;
 import ee.sk.middemo.services.MobileIdSignatureService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -46,6 +48,8 @@ import org.springframework.web.servlet.ModelAndView;
 
 @RestController
 public class MobileIdController {
+    Logger logger = LoggerFactory.getLogger(MobileIdController.class);
+
     private MobileIdSignatureService signatureService;
     private MobileIdAuthenticationService authenticationService;
 
@@ -143,6 +147,8 @@ public class MobileIdController {
 
     @ExceptionHandler(Exception.class)
     public ModelAndView handleMobileIdException(Exception exception) {
+        logger.warn("Generic error caught", exception);
+
         ModelMap model = new ModelMap();
 
         model.addAttribute("errorMessage", exception.getMessage());
