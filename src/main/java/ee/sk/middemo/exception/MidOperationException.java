@@ -34,9 +34,8 @@ public class MidOperationException extends RuntimeException {
 
     public MidOperationException(String message, Throwable cause) {
         super(cause);
-        this.message = message + " Cause:" +  cause.getMessage();
+        this.message = message + " Cause: " +  cause.getMessage();
     }
-
 
     public MidOperationException(List<String> errors) {
         this.message = "MID service returned validation errors: " + String.join(", ", errors);
