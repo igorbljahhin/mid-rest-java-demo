@@ -48,8 +48,6 @@ public class MobileIdCertificateServiceImpl implements MobileIdCertificateServic
     @Override
     public X509Certificate getCertificate(UserRequest userRequest) {
         CertificateRequest request = CertificateRequest.newBuilder()
-                .withRelyingPartyUUID(client.getRelyingPartyUUID())
-                .withRelyingPartyName(client.getRelyingPartyName())
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .build();
