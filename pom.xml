@@ -43,13 +43,12 @@
             <version>3.0.0</version>
         </dependency>
 
-        <!-- TODO: switch back to SK published version 1.1 before creating pull request -->
-        <!-- JITPACK takes this commit tag from github and builds it -->
         <dependency>
-            <groupId>com.github.aasaru</groupId>
+            <groupId>ee.sk.mid</groupId>
             <artifactId>mid-rest-java-client</artifactId>
-            <version>e36f471</version>
+            <version>1.1</version>
         </dependency>
+
 
     </dependencies>
 
@@ -95,12 +94,6 @@
     </build>
 
     <repositories>
-
-        <!-- TODO: remove jitpack repository before creating pull request -->
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
         <repository>
             <snapshots>
                 <enabled>false</enabled>
