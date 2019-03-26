@@ -22,7 +22,7 @@ package ee.sk.middemo;
  * #L%
  */
 
-import ee.sk.mid.MobileIdClient;
+import ee.sk.mid.MidClient;
 import ee.sk.middemo.model.UserMidSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -44,8 +44,8 @@ public class Config {
     private String midApplicationProviderHost;
 
     @Bean
-    public MobileIdClient mobileIdClient() {
-        return MobileIdClient.newBuilder()
+    public MidClient mobileIdClient() {
+        return MidClient.newBuilder()
                 .withRelyingPartyUUID(midRelyingPartyUuid)
                 .withRelyingPartyName(midRelyingPartyName)
                 .withHostUrl(midApplicationProviderHost)

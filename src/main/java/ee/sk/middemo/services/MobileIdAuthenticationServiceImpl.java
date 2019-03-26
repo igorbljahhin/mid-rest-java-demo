@@ -22,27 +22,11 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import ee.sk.mid.AuthenticationIdentity;
-import ee.sk.mid.AuthenticationResponseValidator;
-import ee.sk.mid.DisplayTextFormat;
-import ee.sk.mid.Language;
-import ee.sk.mid.MobileIdAuthentication;
-import ee.sk.mid.MobileIdAuthenticationHashToSign;
-import ee.sk.mid.MobileIdAuthenticationResult;
-import ee.sk.mid.MobileIdClient;
-import ee.sk.mid.exception.DeliveryException;
-import ee.sk.mid.exception.InvalidUserConfigurationException;
-import ee.sk.mid.exception.MidInternalErrorException;
-import ee.sk.mid.exception.MidSessionNotFoundException;
-import ee.sk.mid.exception.MidSessionTimeoutException;
-import ee.sk.mid.exception.MissingOrInvalidParameterException;
-import ee.sk.mid.exception.NotMidClientException;
-import ee.sk.mid.exception.PhoneNotAvailableException;
-import ee.sk.mid.exception.UnauthorizedException;
-import ee.sk.mid.exception.UserCancellationException;
-import ee.sk.mid.rest.dao.SessionStatus;
-import ee.sk.mid.rest.dao.request.AuthenticationRequest;
-import ee.sk.mid.rest.dao.response.AuthenticationResponse;
+import ee.sk.mid.*;
+import ee.sk.mid.exception.*;
+import ee.sk.mid.rest.dao.MidSessionStatus;
+import ee.sk.mid.rest.dao.request.MidAuthenticationRequest;
+import ee.sk.mid.rest.dao.response.MidAuthenticationResponse;
 import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.AuthenticationSessionInfo;
 import ee.sk.middemo.model.UserRequest;
@@ -61,11 +45,11 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
     private String midAuthDisplayText;
 
     @Autowired
-    private MobileIdClient client;
+    private MidClient client;
 
     @Override
     public AuthenticationSessionInfo startAuthentication(UserRequest userRequest) {
-        MobileIdAuthenticationHashToSign authenticationHash = MobileIdAuthenticationHashToSign.generateRandomHashOfDefaultType();
+        MidAuthenticationHashToSign authenticationHash = MidAuthenticationHashToSign.generateRandomHashOfDefaultType();
 
         return AuthenticationSessionInfo.newBuilder()
                 .withUserRequest(userRequest)
@@ -75,37 +59,37 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
     }
 
     @Override
-    public AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo) {
+    public MidAuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo) {
 
         UserRequest userRequest = authenticationSessionInfo.getUserRequest();
-        MobileIdAuthenticationHashToSign authenticationHash = authenticationSessionInfo.getAuthenticationHash();
+        MidAuthenticationHashToSign authenticationHash = authenticationSessionInfo.getAuthenticationHash();
 
-        AuthenticationRequest request = AuthenticationRequest.newBuilder()
+        MidAuthenticationRequest request = MidAuthenticationRequest.newBuilder()
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withHashToSign(authenticationHash)
-                .withLanguage(Language.ENG)
+                .withLanguage( MidLanguage.ENG)
                 .withDisplayText(midAuthDisplayText)
-                .withDisplayTextFormat(DisplayTextFormat.GSM7)
+                .withDisplayTextFormat( MidDisplayTextFormat.GSM7)
                 .build();
 
-        MobileIdAuthenticationResult authenticationResult;
+        MidAuthenticationResult authenticationResult;
 
         try {
-            AuthenticationResponse response = client.getMobileIdConnector().authenticate(request);
-            SessionStatus sessionStatus = client.getSessionStatusPoller()
+            MidAuthenticationResponse response = client.getMobileIdConnector().authenticate(request);
+            MidSessionStatus sessionStatus = client.getSessionStatusPoller()
                 .fetchFinalAuthenticationSessionStatus(response.getSessionID());
-            MobileIdAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash);
+            MidAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash);
 
-            AuthenticationResponseValidator validator = new AuthenticationResponseValidator();
+            MidAuthenticationResponseValidator validator = new MidAuthenticationResponseValidator();
             authenticationResult = validator.validate(authentication);
 
         }
-        catch (UserCancellationException e) {
+        catch (MidUserCancellationException e) {
             logger.info("User cancelled operation from his/her phone.");
             throw new MidOperationException("You cancelled operation from your phone.");
         }
-        catch (NotMidClientException e) {
+        catch (MidNotMidClientException e) {
             logger.info("User is not a MID client or user's certificates are revoked");
             throw new MidOperationException("You are not a Mobile-ID client or your Mobile-ID certificates are revoked. Please contact your mobile operator.");
         }
@@ -113,19 +97,19 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
             logger.info("User did not type in PIN code or communication error.");
             throw new MidOperationException("You didn't type in PIN code into your phone or there was a communication error.");
         }
-        catch (PhoneNotAvailableException e) {
+        catch (MidPhoneNotAvailableException e) {
             logger.info("Unable to reach phone/SIM card. User needs to check if phone has coverage.");
             throw new MidOperationException("Unable to reach your phone. Please make sure your phone has mobile coverage.");
         }
-        catch (DeliveryException e) {
+        catch (MidDeliveryException e) {
             logger.info("Error communicating with the phone/SIM card.");
             throw new MidOperationException("Communication error. Unable to reach your phone.");
         }
-        catch (InvalidUserConfigurationException e) {
+        catch (MidInvalidUserConfigurationException e) {
             logger.info("Mobile-ID configuration on user's SIM card differs from what is configured on service provider side. User needs to contact his/her mobile operator.");
             throw new MidOperationException("Mobile-ID configuration on your SIM card differs from what is configured on service provider's side. Please contact your mobile operator.");
         }
-        catch (MidSessionNotFoundException | MissingOrInvalidParameterException | UnauthorizedException e) {
+        catch (MidSessionNotFoundException | MidMissingOrInvalidParameterException | MidUnauthorizedException e) {
             logger.error("Integrator-side error with MID integration (including insufficient input validation) or configuration", e);
             throw new MidOperationException("Client side error with mobile-ID integration.", e);
         }

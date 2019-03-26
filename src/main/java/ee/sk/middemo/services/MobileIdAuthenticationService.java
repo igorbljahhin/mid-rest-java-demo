@@ -22,7 +22,7 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import ee.sk.mid.AuthenticationIdentity;
+import ee.sk.mid.MidAuthenticationIdentity;
 import ee.sk.middemo.model.AuthenticationSessionInfo;
 import ee.sk.middemo.model.UserRequest;
 
@@ -30,5 +30,5 @@ public interface MobileIdAuthenticationService {
 
     AuthenticationSessionInfo startAuthentication(UserRequest userRequest);
 
-    AuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo);
+    MidAuthenticationIdentity authenticate(AuthenticationSessionInfo authenticationSessionInfo);
 }

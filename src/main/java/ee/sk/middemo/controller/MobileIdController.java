@@ -22,16 +22,10 @@ package ee.sk.middemo.controller;
  * #L%
  */
 
-import javax.validation.Valid;
-
-import ee.sk.mid.AuthenticationIdentity;
+import ee.sk.mid.MidAuthenticationIdentity;
 import ee.sk.middemo.exception.FileUploadException;
 import ee.sk.middemo.exception.MidOperationException;
-import ee.sk.middemo.model.AuthenticationSessionInfo;
-import ee.sk.middemo.model.SigningResult;
-import ee.sk.middemo.model.SigningSessionInfo;
-import ee.sk.middemo.model.UserMidSession;
-import ee.sk.middemo.model.UserRequest;
+import ee.sk.middemo.model.*;
 import ee.sk.middemo.services.MobileIdAuthenticationService;
 import ee.sk.middemo.services.MobileIdSignatureService;
 import org.slf4j.Logger;
@@ -39,12 +33,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+
+import javax.validation.Valid;
 
 @RestController
 public class MobileIdController {
@@ -119,7 +111,7 @@ public class MobileIdController {
 
     @PostMapping(value = "/authenticate")
     public ModelAndView authenticate(ModelMap model) {
-        AuthenticationIdentity person = authenticationService.authenticate(userMidSession.getAuthenticationSessionInfo());
+        MidAuthenticationIdentity person = authenticationService.authenticate(userMidSession.getAuthenticationSessionInfo());
         model.addAttribute("person", person);
 
         userMidSession.clearAuthenticationSessionInfo();

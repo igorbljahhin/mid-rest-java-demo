@@ -22,49 +22,27 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import java.io.File;
-import java.io.IOException;
-import java.security.cert.X509Certificate;
-
-import ee.sk.mid.DisplayTextFormat;
-import ee.sk.mid.HashToSign;
-import ee.sk.mid.HashType;
-import ee.sk.mid.Language;
-import ee.sk.mid.MobileIdClient;
-import ee.sk.mid.MobileIdSignature;
-import ee.sk.mid.exception.DeliveryException;
-import ee.sk.mid.exception.InvalidUserConfigurationException;
-import ee.sk.mid.exception.MidInternalErrorException;
-import ee.sk.mid.exception.MidSessionNotFoundException;
-import ee.sk.mid.exception.MidSessionTimeoutException;
-import ee.sk.mid.exception.MissingOrInvalidParameterException;
-import ee.sk.mid.exception.NotMidClientException;
-import ee.sk.mid.exception.PhoneNotAvailableException;
-import ee.sk.mid.exception.UnauthorizedException;
-import ee.sk.mid.exception.UserCancellationException;
-import ee.sk.mid.rest.dao.SessionStatus;
-import ee.sk.mid.rest.dao.request.SignatureRequest;
-import ee.sk.mid.rest.dao.response.SignatureResponse;
+import ee.sk.mid.*;
+import ee.sk.mid.exception.*;
+import ee.sk.mid.rest.dao.MidSessionStatus;
+import ee.sk.mid.rest.dao.request.MidSignatureRequest;
+import ee.sk.mid.rest.dao.response.MidSignatureResponse;
 import ee.sk.middemo.exception.FileUploadException;
 import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.SigningResult;
 import ee.sk.middemo.model.SigningSessionInfo;
 import ee.sk.middemo.model.UserRequest;
-import org.digidoc4j.Configuration;
-import org.digidoc4j.Container;
-import org.digidoc4j.ContainerBuilder;
-import org.digidoc4j.DataFile;
-import org.digidoc4j.DataToSign;
-import org.digidoc4j.DigestAlgorithm;
-import org.digidoc4j.Signature;
-import org.digidoc4j.SignatureBuilder;
-import org.digidoc4j.SignatureProfile;
+import org.digidoc4j.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.cert.X509Certificate;
 
 @Service
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
@@ -78,7 +56,7 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
     private MobileIdCertificateService certificateService;
 
     @Autowired
-    private MobileIdClient client;
+    private MidClient client;
 
     public MobileIdSignatureServiceImpl(MobileIdCertificateService certificateService) {
         this.certificateService = certificateService;
@@ -104,21 +82,21 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             .withSignatureProfile(SignatureProfile.LT)
             .buildDataToSign();
 
-        HashToSign hashToSign = HashToSign.newBuilder()
+        MidHashToSign hashToSign = MidHashToSign.newBuilder()
             .withDataToHash(dataToSignExternally.getDataToSign())
-            .withHashType(HashType.SHA256)
+            .withHashType( MidHashType.SHA256)
             .build();
 
-        SignatureRequest signatureRequest = SignatureRequest.newBuilder()
+        MidSignatureRequest signatureRequest = MidSignatureRequest.newBuilder()
             .withPhoneNumber(userRequest.getPhoneNumber())
             .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
             .withHashToSign(hashToSign)
-            .withLanguage(Language.ENG)
+            .withLanguage( MidLanguage.ENG)
             .withDisplayText(midSignDisplayText)
-            .withDisplayTextFormat(DisplayTextFormat.GSM7)
+            .withDisplayTextFormat( MidDisplayTextFormat.GSM7)
             .build();
 
-        SignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);
+        MidSignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);
 
         return SigningSessionInfo.newBuilder()
             .withSessionID(response.getSessionID())
@@ -142,10 +120,10 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
         Signature signature;
 
         try {
-            SessionStatus sessionStatus = client.getSessionStatusPoller()
+            MidSessionStatus sessionStatus = client.getSessionStatusPoller()
                 .fetchFinalSignatureSessionStatus(signingSessionInfo.getSessionID());
 
-            MobileIdSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
+            MidSignature mobileIdSignature = client.createMobileIdSignature(sessionStatus);
 
             signature = signingSessionInfo.getDataToSign().finalize(mobileIdSignature.getValue());
             signingSessionInfo.getContainer().addSignature(signature);
@@ -155,11 +133,11 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             signingSessionInfo.getContainer().saveAsFile(filePath);
 
         }
-        catch (UserCancellationException e) {
+        catch (MidUserCancellationException e) {
             logger.info("User cancelled operation from his/her phone.");
             throw new MidOperationException("You cancelled operation from your phone.");
         }
-        catch (NotMidClientException e) {
+        catch (MidNotMidClientException e) {
             logger.info("User is not a MID client or user's certificates are revoked");
             throw new MidOperationException("You are not a Mobile-ID client or your Mobile-ID certificates are revoked. Please contact your mobile operator.");
         }
@@ -167,19 +145,19 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             logger.info("User did not type in PIN code or communication error.");
             throw new MidOperationException("You didn't type in PIN code into your phone or there was a communication error.");
         }
-        catch (PhoneNotAvailableException e) {
+        catch (MidPhoneNotAvailableException e) {
             logger.info("Unable to reach phone/SIM card. User needs to check if phone has coverage.");
             throw new MidOperationException("Unable to reach your phone. Please make sure your phone has mobile coverage.");
         }
-        catch (DeliveryException e) {
+        catch (MidDeliveryException e) {
             logger.info("Error communicating with the phone/SIM card.");
             throw new MidOperationException("Communication error. Unable to reach your phone.");
         }
-        catch (InvalidUserConfigurationException e) {
+        catch (MidInvalidUserConfigurationException e) {
             logger.info("Mobile-ID configuration on user's SIM card differs from what is configured on service provider side. User needs to contact his/her mobile operator.");
             throw new MidOperationException("Mobile-ID configuration on your SIM card differs from what is configured on service provider's side. Please contact your mobile operator.");
         }
-        catch (MidSessionNotFoundException | MissingOrInvalidParameterException | UnauthorizedException e) {
+        catch (MidSessionNotFoundException | MidMissingOrInvalidParameterException | MidUnauthorizedException e) {
             logger.error("Integrator-side error with MID integration or configuration", e);
             throw new MidOperationException("Client side error with mobile-ID integration.", e);
         }

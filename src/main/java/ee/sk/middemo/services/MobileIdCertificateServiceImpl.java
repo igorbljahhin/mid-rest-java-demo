@@ -22,15 +22,13 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import java.security.cert.X509Certificate;
-
-import ee.sk.mid.MobileIdClient;
+import ee.sk.mid.MidClient;
 import ee.sk.mid.exception.MidInternalErrorException;
-import ee.sk.mid.exception.MissingOrInvalidParameterException;
-import ee.sk.mid.exception.NotMidClientException;
-import ee.sk.mid.exception.UnauthorizedException;
-import ee.sk.mid.rest.dao.request.CertificateRequest;
-import ee.sk.mid.rest.dao.response.CertificateChoiceResponse;
+import ee.sk.mid.exception.MidMissingOrInvalidParameterException;
+import ee.sk.mid.exception.MidNotMidClientException;
+import ee.sk.mid.exception.MidUnauthorizedException;
+import ee.sk.mid.rest.dao.request.MidCertificateRequest;
+import ee.sk.mid.rest.dao.response.MidCertificateChoiceResponse;
 import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.UserRequest;
 import org.slf4j.Logger;
@@ -38,29 +36,31 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.cert.X509Certificate;
+
 @Service
 public class MobileIdCertificateServiceImpl implements MobileIdCertificateService {
     Logger logger = LoggerFactory.getLogger(MobileIdCertificateServiceImpl.class);
 
     @Autowired
-    private MobileIdClient client;
+    private MidClient client;
 
     @Override
     public X509Certificate getCertificate(UserRequest userRequest) {
-        CertificateRequest request = CertificateRequest.newBuilder()
+        MidCertificateRequest request = MidCertificateRequest.newBuilder()
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .build();
 
         try {
-            CertificateChoiceResponse response = client.getMobileIdConnector().getCertificate(request);
+            MidCertificateChoiceResponse response = client.getMobileIdConnector().getCertificate(request);
             return client.createMobileIdCertificate(response);
         }
-        catch (NotMidClientException e) {
+        catch (MidNotMidClientException e) {
             logger.info("User is not a MID client or user's certificates are revoked");
             throw new MidOperationException("You are not a Mobile-ID client or your Mobile-ID certificates are revoked. Please contact your mobile operator.");
         }
-        catch (MissingOrInvalidParameterException | UnauthorizedException e) {
+        catch (MidMissingOrInvalidParameterException | MidUnauthorizedException e) {
             logger.error("Integrator-side error with MID integration (including insufficient input validation) or configuration", e);
             throw new MidOperationException("Client side error with mobile-ID integration.", e);
         }
