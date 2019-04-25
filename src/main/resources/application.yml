@@ -1,0 +1,17 @@
+spring.servlet.multipart:
+  max-file-size: 10MB
+  max-request-size: 10MB
+server.port: 8081
+
+mid.client:
+  relyingPartyUuid: 00000000-0000-0000-0000-000000000000
+  relyingPartyName: DEMO
+mid.client.applicationProviderHost: https://tsp.demo.sk.ee/mid-api
+mid.auth:
+  displayText: Log in with MID demo?
+  displayTextFormat: GSM7
+  displayTextLanguage: ENG
+mid.sign:
+  displayText: Подписать?
+  displayTextFormat: UCS2
+  displayTextLanguage: RUS

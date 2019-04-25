@@ -22,8 +22,26 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import ee.sk.mid.*;
-import ee.sk.mid.exception.*;
+import java.io.File;
+import java.io.IOException;
+import java.security.cert.X509Certificate;
+
+import ee.sk.mid.MidClient;
+import ee.sk.mid.MidDisplayTextFormat;
+import ee.sk.mid.MidHashToSign;
+import ee.sk.mid.MidHashType;
+import ee.sk.mid.MidLanguage;
+import ee.sk.mid.MidSignature;
+import ee.sk.mid.exception.MidDeliveryException;
+import ee.sk.mid.exception.MidInternalErrorException;
+import ee.sk.mid.exception.MidInvalidUserConfigurationException;
+import ee.sk.mid.exception.MidMissingOrInvalidParameterException;
+import ee.sk.mid.exception.MidNotMidClientException;
+import ee.sk.mid.exception.MidPhoneNotAvailableException;
+import ee.sk.mid.exception.MidSessionNotFoundException;
+import ee.sk.mid.exception.MidSessionTimeoutException;
+import ee.sk.mid.exception.MidUnauthorizedException;
+import ee.sk.mid.exception.MidUserCancellationException;
 import ee.sk.mid.rest.dao.MidSessionStatus;
 import ee.sk.mid.rest.dao.request.MidSignatureRequest;
 import ee.sk.mid.rest.dao.response.MidSignatureResponse;
@@ -32,17 +50,21 @@ import ee.sk.middemo.exception.MidOperationException;
 import ee.sk.middemo.model.SigningResult;
 import ee.sk.middemo.model.SigningSessionInfo;
 import ee.sk.middemo.model.UserRequest;
-import org.digidoc4j.*;
+import org.digidoc4j.Configuration;
+import org.digidoc4j.Container;
+import org.digidoc4j.ContainerBuilder;
+import org.digidoc4j.DataFile;
+import org.digidoc4j.DataToSign;
+import org.digidoc4j.DigestAlgorithm;
+import org.digidoc4j.Signature;
+import org.digidoc4j.SignatureBuilder;
+import org.digidoc4j.SignatureProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.IOException;
-import java.security.cert.X509Certificate;
 
 @Service
 public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
@@ -52,6 +74,12 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
 
     @Value("${mid.sign.displayText}")
     private String midSignDisplayText;
+
+    @Value("${mid.sign.displayTextFormat}")
+    private MidDisplayTextFormat midSignDisplayTextFormat;
+
+    @Value("${mid.sign.displayTextLanguage}")
+    private MidLanguage midSignLanguage;
 
     private MobileIdCertificateService certificateService;
 
@@ -91,9 +119,9 @@ public class MobileIdSignatureServiceImpl implements MobileIdSignatureService {
             .withPhoneNumber(userRequest.getPhoneNumber())
             .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
             .withHashToSign(hashToSign)
-            .withLanguage( MidLanguage.ENG)
+            .withLanguage(midSignLanguage)
             .withDisplayText(midSignDisplayText)
-            .withDisplayTextFormat( MidDisplayTextFormat.GSM7)
+            .withDisplayTextFormat(midSignDisplayTextFormat)
             .build();
 
         MidSignatureResponse response = client.getMobileIdConnector().sign(signatureRequest);

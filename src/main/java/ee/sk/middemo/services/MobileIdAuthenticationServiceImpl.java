@@ -22,8 +22,24 @@ package ee.sk.middemo.services;
  * #L%
  */
 
-import ee.sk.mid.*;
-import ee.sk.mid.exception.*;
+import ee.sk.mid.MidAuthentication;
+import ee.sk.mid.MidAuthenticationHashToSign;
+import ee.sk.mid.MidAuthenticationIdentity;
+import ee.sk.mid.MidAuthenticationResponseValidator;
+import ee.sk.mid.MidAuthenticationResult;
+import ee.sk.mid.MidClient;
+import ee.sk.mid.MidDisplayTextFormat;
+import ee.sk.mid.MidLanguage;
+import ee.sk.mid.exception.MidDeliveryException;
+import ee.sk.mid.exception.MidInternalErrorException;
+import ee.sk.mid.exception.MidInvalidUserConfigurationException;
+import ee.sk.mid.exception.MidMissingOrInvalidParameterException;
+import ee.sk.mid.exception.MidNotMidClientException;
+import ee.sk.mid.exception.MidPhoneNotAvailableException;
+import ee.sk.mid.exception.MidSessionNotFoundException;
+import ee.sk.mid.exception.MidSessionTimeoutException;
+import ee.sk.mid.exception.MidUnauthorizedException;
+import ee.sk.mid.exception.MidUserCancellationException;
 import ee.sk.mid.rest.dao.MidSessionStatus;
 import ee.sk.mid.rest.dao.request.MidAuthenticationRequest;
 import ee.sk.mid.rest.dao.response.MidAuthenticationResponse;
@@ -43,6 +59,12 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
 
     @Value("${mid.auth.displayText}")
     private String midAuthDisplayText;
+
+    @Value("${mid.auth.displayTextFormat}")
+    private MidDisplayTextFormat midAuthDisplayTextFormat;
+
+    @Value("${mid.auth.displayTextLanguage}")
+    private MidLanguage midAuthLanguage;
 
     @Autowired
     private MidClient client;
@@ -68,9 +90,9 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .withPhoneNumber(userRequest.getPhoneNumber())
                 .withNationalIdentityNumber(userRequest.getNationalIdentityNumber())
                 .withHashToSign(authenticationHash)
-                .withLanguage( MidLanguage.ENG)
+                .withLanguage( midAuthLanguage )
                 .withDisplayText(midAuthDisplayText)
-                .withDisplayTextFormat( MidDisplayTextFormat.GSM7)
+                .withDisplayTextFormat(midAuthDisplayTextFormat)
                 .build();
 
         MidAuthenticationResult authenticationResult;
