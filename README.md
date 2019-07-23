@@ -23,3 +23,12 @@ You can also change the status of the certificates from there.
 
 After that you should be able to log in and sign (resulting signature is not legally valid)
 using your own phone number and national id code.
+
+## Building a real-life application
+
+For real-life use case you need to change in class `MobileIdSignatureServiceImpl` in method `sendSignatureRequest`
+
+the following line (constructor parameter needs to be PROD):
+
+        Configuration configuration = new Configuration(Configuration.Mode.PROD);
+
