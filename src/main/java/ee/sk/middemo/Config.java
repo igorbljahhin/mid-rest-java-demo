@@ -22,6 +22,9 @@ package ee.sk.middemo;
  * #L%
  */
 
+import java.io.InputStream;
+import java.security.KeyStore;
+
 import ee.sk.mid.MidClient;
 import ee.sk.middemo.model.UserMidSession;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,12 +47,18 @@ public class Config {
     private String midApplicationProviderHost;
 
     @Bean
-    public MidClient mobileIdClient() {
+    public MidClient mobileIdClient() throws Exception {
+
+        InputStream is = Config.class.getResourceAsStream("/trusted_server_certs.p12");
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        trustStore.load(is, "changeit".toCharArray());
+
         return MidClient.newBuilder()
                 .withRelyingPartyUUID(midRelyingPartyUuid)
                 .withRelyingPartyName(midRelyingPartyName)
                 .withHostUrl(midApplicationProviderHost)
                 .withLongPollingTimeoutSeconds(60)
+                .withTrustStore(trustStore)
                 .build();
     }
 

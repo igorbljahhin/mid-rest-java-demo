@@ -32,3 +32,15 @@ the following line (constructor parameter needs to be PROD):
 
         Configuration configuration = new Configuration(Configuration.Mode.PROD);
 
+## Troubleshooting
+
+### Error 'unable to find valid certification path to requested target'
+
+This application only connects to servers it trusts. That is the SSL cert of the
+server must be imported into file src/main/resources/trusted_server_certs.p12.
+
+If you change this application to connect to some other server 
+(or if the SSL cert of the demo server has expired and replaced with new one)
+then you need to import server's cert into the trust store.
+
+More info how to do this can be found from [mid-rest-java-client documentation](https://github.com/SK-EID/mid-rest-java-client).
