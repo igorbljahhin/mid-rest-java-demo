@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.github.aasaru</groupId>
             <artifactId>mid-rest-java-client</artifactId>
-            <version>1ade2c6</version>
+            <version>34dca53</version>
         </dependency>
 
     </dependencies>

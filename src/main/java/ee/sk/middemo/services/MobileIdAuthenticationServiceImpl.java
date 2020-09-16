@@ -103,7 +103,7 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .fetchFinalAuthenticationSessionStatus(response.getSessionID());
             MidAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash);
 
-            MidAuthenticationResponseValidator validator = new MidAuthenticationResponseValidator();
+            MidAuthenticationResponseValidator validator = new MidAuthenticationResponseValidator(client.getTrustStore());
             authenticationResult = validator.validate(authentication);
 
         }
