@@ -47,18 +47,24 @@ public class Config {
     @Value("${mid.client.applicationProviderHost}")
     private String midApplicationProviderHost;
 
-    @Value("${mid.truststore.trusted-server-ssl-certs}")
+    @Value("${mid.truststore.trusted-server-ssl-certs.filename}")
     private String midTrustedServerSslCertsFilename;
 
-    @Value("${mid.truststore.trusted-root-certs}")
+    @Value("${mid.truststore.trusted-server-ssl-certs.password}")
+    private String midTrustedServerSslCertsPassword;
+
+    @Value("${mid.truststore.trusted-root-certs.filename}")
     private String midTrustedRootCertsFilename;
+
+    @Value("${mid.truststore.trusted-root-certs.password}")
+    private String midTrustedRootCertsPassword;
 
     @Bean
     public MidClient mobileIdClient() throws Exception {
 
         InputStream is = Config.class.getResourceAsStream(midTrustedServerSslCertsFilename);
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
-        trustStore.load(is, "changeit".toCharArray());
+        trustStore.load(is, midTrustedServerSslCertsPassword.toCharArray());
 
         return MidClient.newBuilder()
                 .withRelyingPartyUUID(midRelyingPartyUuid)
@@ -80,7 +86,7 @@ public class Config {
     public MidAuthenticationResponseValidator midResponseValidator() throws Exception {
         InputStream is = Config.class.getResourceAsStream(midTrustedRootCertsFilename);
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
-        trustStore.load(is, "changeit".toCharArray());
+        trustStore.load(is, midTrustedRootCertsPassword.toCharArray());
 
         return new MidAuthenticationResponseValidator(trustStore);
     }

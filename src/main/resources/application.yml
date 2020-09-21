@@ -17,5 +17,9 @@ mid:
     displayTextFormat: UCS2
     displayTextLanguage: RUS
   truststore:
-    trusted-server-ssl-certs: /mid.trusted_server_certs.p12
-    trusted-root-certs: /mid.trusted_root_certs.p12
+    trusted-server-ssl-certs:
+      filename: /mid.trusted_server_certs.p12
+      password: changeit
+    trusted-root-certs:
+      filename: /mid.trusted_root_certs.p12
+      password: changeit
