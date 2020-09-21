@@ -25,6 +25,7 @@ package ee.sk.middemo;
 import java.io.InputStream;
 import java.security.KeyStore;
 
+import ee.sk.mid.MidAuthenticationResponseValidator;
 import ee.sk.mid.MidClient;
 import ee.sk.middemo.model.UserMidSession;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,10 +47,16 @@ public class Config {
     @Value("${mid.client.applicationProviderHost}")
     private String midApplicationProviderHost;
 
+    @Value("${mid.truststore.trusted-server-ssl-certs}")
+    private String midTrustedServerSslCertsFilename;
+
+    @Value("${mid.truststore.trusted-root-certs}")
+    private String midTrustedRootCertsFilename;
+
     @Bean
     public MidClient mobileIdClient() throws Exception {
 
-        InputStream is = Config.class.getResourceAsStream("/trusted_server_certs.p12");
+        InputStream is = Config.class.getResourceAsStream(midTrustedServerSslCertsFilename);
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
         trustStore.load(is, "changeit".toCharArray());
 
@@ -67,6 +74,15 @@ public class Config {
             proxyMode = ScopedProxyMode.TARGET_CLASS)
     public UserMidSession userSessionSigning() {
         return new UserMidSession();
+    }
+
+    @Bean
+    public MidAuthenticationResponseValidator midResponseValidator() throws Exception {
+        InputStream is = Config.class.getResourceAsStream(midTrustedRootCertsFilename);
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        trustStore.load(is, "changeit".toCharArray());
+
+        return new MidAuthenticationResponseValidator(trustStore);
     }
 
 }

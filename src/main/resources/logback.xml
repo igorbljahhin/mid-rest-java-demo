@@ -16,7 +16,7 @@
         <appender-ref ref="Console" />
     </root>
 
-    <logger name="ee.sk" level="debug" additivity="false">
+    <logger name="ee.sk" level="debug">
         <appender-ref ref="Console" />
     </logger>
 
