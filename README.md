@@ -1,3 +1,5 @@
+[![Build Status](https://api.travis-ci.com/SK-EID/mid-rest-java-demo.svg?branch=master)](https://travis-ci.com/SK-EID/mid-rest-java-demo)
+
 # Mobile-ID (MID) Java Demo
 
 Sample application to demonstrate how to implement authentication and signing a document with Java.

@@ -43,17 +43,13 @@
             <version>3.0.0</version>
         </dependency>
 
-<!--        <dependency>
+        <dependency>
             <groupId>ee.sk.mid</groupId>
             <artifactId>mid-rest-java-client</artifactId>
-            <version>1.2</version>
-        </dependency>-->
-
-        <dependency>
-            <groupId>com.github.aasaru</groupId>
-            <artifactId>mid-rest-java-client</artifactId>
-            <version>34dca53</version>
+            <version>1.3</version>
         </dependency>
+
+
 
     </dependencies>
 
@@ -107,10 +103,6 @@
             <name>Maven Central</name>
             <url>http://repo1.maven.org/maven2</url>
         </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -119,7 +111,7 @@
             </snapshots>
             <id>central</id>
             <name>Maven Plugin Repository</name>
-            <url>http://repo1.maven.org/maven2</url>
+            <url>https://repo1.maven.org/maven2</url>
         </pluginRepository>
     </pluginRepositories>
 
