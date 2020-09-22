@@ -22,6 +22,10 @@ package ee.sk.middemo;
  * #L%
  */
 
+import java.io.InputStream;
+import java.security.KeyStore;
+
+import ee.sk.mid.MidAuthenticationResponseValidator;
 import ee.sk.mid.MidClient;
 import ee.sk.middemo.model.UserMidSession;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,13 +47,31 @@ public class Config {
     @Value("${mid.client.applicationProviderHost}")
     private String midApplicationProviderHost;
 
+    @Value("${mid.truststore.trusted-server-ssl-certs.filename}")
+    private String midTrustedServerSslCertsFilename;
+
+    @Value("${mid.truststore.trusted-server-ssl-certs.password}")
+    private String midTrustedServerSslCertsPassword;
+
+    @Value("${mid.truststore.trusted-root-certs.filename}")
+    private String midTrustedRootCertsFilename;
+
+    @Value("${mid.truststore.trusted-root-certs.password}")
+    private String midTrustedRootCertsPassword;
+
     @Bean
-    public MidClient mobileIdClient() {
+    public MidClient mobileIdClient() throws Exception {
+
+        InputStream is = Config.class.getResourceAsStream(midTrustedServerSslCertsFilename);
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        trustStore.load(is, midTrustedServerSslCertsPassword.toCharArray());
+
         return MidClient.newBuilder()
                 .withRelyingPartyUUID(midRelyingPartyUuid)
                 .withRelyingPartyName(midRelyingPartyName)
                 .withHostUrl(midApplicationProviderHost)
                 .withLongPollingTimeoutSeconds(60)
+                .withTrustStore(trustStore)
                 .build();
     }
 
@@ -58,6 +80,15 @@ public class Config {
             proxyMode = ScopedProxyMode.TARGET_CLASS)
     public UserMidSession userSessionSigning() {
         return new UserMidSession();
+    }
+
+    @Bean
+    public MidAuthenticationResponseValidator midResponseValidator() throws Exception {
+        InputStream is = Config.class.getResourceAsStream(midTrustedRootCertsFilename);
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        trustStore.load(is, midTrustedRootCertsPassword.toCharArray());
+
+        return new MidAuthenticationResponseValidator(trustStore);
     }
 
 }

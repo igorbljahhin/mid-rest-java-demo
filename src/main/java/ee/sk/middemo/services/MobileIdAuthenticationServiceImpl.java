@@ -69,6 +69,9 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
     @Autowired
     private MidClient client;
 
+    @Autowired
+    private MidAuthenticationResponseValidator midAuthenticationResponseValidator;
+
     @Override
     public AuthenticationSessionInfo startAuthentication(UserRequest userRequest) {
         MidAuthenticationHashToSign authenticationHash = MidAuthenticationHashToSign.generateRandomHashOfDefaultType();
@@ -103,8 +106,7 @@ public class MobileIdAuthenticationServiceImpl implements MobileIdAuthentication
                 .fetchFinalAuthenticationSessionStatus(response.getSessionID());
             MidAuthentication authentication = client.createMobileIdAuthentication(sessionStatus, authenticationHash);
 
-            MidAuthenticationResponseValidator validator = new MidAuthenticationResponseValidator();
-            authenticationResult = validator.validate(authentication);
+            authenticationResult = midAuthenticationResponseValidator.validate(authentication);
 
         }
         catch (MidUserCancellationException e) {

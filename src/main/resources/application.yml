@@ -3,15 +3,23 @@ spring.servlet.multipart:
   max-request-size: 10MB
 server.port: 8081
 
-mid.client:
-  relyingPartyUuid: 00000000-0000-0000-0000-000000000000
-  relyingPartyName: DEMO
-mid.client.applicationProviderHost: https://tsp.demo.sk.ee/mid-api
-mid.auth:
-  displayText: Log in with MID demo?
-  displayTextFormat: GSM7
-  displayTextLanguage: ENG
-mid.sign:
-  displayText: Подписать?
-  displayTextFormat: UCS2
-  displayTextLanguage: RUS
+mid:
+  client:
+    relyingPartyUuid: 00000000-0000-0000-0000-000000000000
+    relyingPartyName: DEMO
+    applicationProviderHost: https://tsp.demo.sk.ee/mid-api
+  auth:
+    displayText: Log in with MID demo?
+    displayTextFormat: GSM7
+    displayTextLanguage: ENG
+  sign:
+    displayText: Подписать?
+    displayTextFormat: UCS2
+    displayTextLanguage: RUS
+  truststore:
+    trusted-server-ssl-certs:
+      filename: /mid.trusted_server_certs.p12
+      password: changeit
+    trusted-root-certs:
+      filename: /mid.trusted_root_certs.p12
+      password: changeit
