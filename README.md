@@ -2,12 +2,13 @@
 
 # Mobile-ID (MID) Java Demo
 
-Sample application to demonstrate how to implement authentication and signing a document with
-[mid-rest-java-client](https://github.com/SK-EID/mid-rest-java-client) library.
+Sample application to demonstrate how to use [mid-rest-java-client](https://github.com/SK-EID/mid-rest-java-client) library and implement:
+* authentication with [Mobile ID](https://github.com/SK-EID/MID)
+* fetching the signing certificate and signing a document with [Mobile ID](https://github.com/SK-EID/MID) using [Digidoc4j library](https://github.com/open-eid/digidoc4j)
 
 ## How to start application
 
-Option 1: `mvn spring-boot:run `
+Option 1: `./mvnw spring-boot:run`
 
 Option 2. run main method of `MidRestJavaDemoApplication`
 
@@ -20,12 +21,7 @@ and authenticate or sign a document using
 
 ### How to run tests with a real phone
 
-If you have Estonian or Lithuanian Mobile ID then you can run real-life tests with your
-own phone if you register your Mobile ID certificates in  [SK Demo environment](https://demo.sk.ee/MIDCertsReg/)
-You can also change the status of the certificates from there.
-
-After that you should be able to log in and sign (resulting signature is not legally valid)
-using your own phone number and national id code.
+Forwarding request to a real phone is no longer possible in demo environment.
 
 ## Building a real-life application
 
@@ -57,22 +53,27 @@ More info how to do this can be found from [mid-rest-java-client documentation](
 ## Trust Stores information
 
 Demo application has two separate trust stores:
- * mid.trusted_server_certs.p12 holds all SSL certificates of servers it trusts 
- * mid.trusted_root_certs.p12 holds all known MID root certificates
+ * mid.trusted_server_certs.p12 holds SSL certificates of servers it trusts 
+ * mid.trusted_root_certs.p12 holds all MID root certificates of MID test chain
 
-Following documents how these two trust stores were created.
+Next section shows how these two trust stores were created
+and with instructions how to create similar trust stores for production.
+
+NB! Avoid placing certificates from production chain and test chain into
+the same trust store. Create separate trust stores for each environment of your application
+and only import certificates needed for that specific environment.
 
 ### Trust store for SSL certificates 
  
-Without following step one would able to connect to Demo API server:
+Without following step one would not be able to connect to Demo API server:
  * import demo env API endpoint SSL root certificate. See [instructions how to obtain the certificate](https://github.com/SK-EID/mid-rest-java-client#how-to-obtain-server-certificate).
- * Note that for demo we import ROOT certificate (DigiCert SHA2 Secure Server CA) from the chain. Importing root certificate is not recommended for production.
+ * Note that for demo we have imported ROOT certificate (DigiCert SHA2 Secure Server CA) from the chain. Importing root certificate is not recommended for production.
 
         keytool -importcert -storetype PKCS12 -keystore mid.trusted_server_certs.p12 \
          -storepass changeit -alias midDemoServerRootCert -file demo_root_cert.crt -noprompt
 
-To be able to point this application (mid-rest-java-demo) against production environment
-we also import production server SSL certificate.
+If you want to be able to point this application (mid-rest-java-demo) against production environment
+(only SK customers have access to production) you should also import production server SSL certificate into same cert store.
 
  * Obtain mid.sk.ee certificate. See [instructions](https://github.com/SK-EID/mid-rest-java-client#how-to-obtain-server-certificate).
  * Import it:
@@ -89,7 +90,7 @@ Without following step you couldn't log in with Estonian (+37200000766) testuser
  * import demo env "TEST of ESTEID-SK 2015" root certificate:
 
         keytool -importcert -storetype PKCS12 -keystore mid.trusted_root_certs.p12 \
-         -storepass changeit -alias "TEST of ESTEID-SK 2015" -file TEST_of_ESTEID-SK_2015.pem -noprompt
+         -storepass changeit -alias "TEST of ESTEID-SK 2015" -file TEST_of_ESTEID-SK_2015.pem.crt -noprompt
 
 We also need to import a second test root certificate. 
 Without following step you couldn't log in with Lithuanian (+37060000666) testuser:
@@ -98,9 +99,8 @@ Without following step you couldn't log in with Lithuanian (+37060000666) testus
         keytool -importcert -file TEST_of_EID-SK_2016.pem.crt -keystore mid.trusted_root_certs.p12 \
          -storepass changeit -alias "TEST_of_EID-SK_2016" -noprompt
  
-We also need to log in with real phones that hold production certificates
- (that are copied to demo environment).
- [More info how to copy your production certificate to demo environment](https://github.com/SK-EID/mid-rest-java-client#how-to-forward-requests-to-your-phone).
+If you want to use it in production using real phones that hold production certificates
+then you would need to import the following production certificates:
 
         keytool -importcert -file ESTEID-SK_2011.pem.crt -keystore mid.trusted_root_certs.p12 \
          -storepass changeit -alias "ESTEID-SK_2011" -noprompt
