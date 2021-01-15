@@ -22,13 +22,25 @@ package ee.sk.middemo;
  * #L%
  */
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 @SpringBootApplication
 public class MidRestJavaDemoApplication {
 
+    @Value("${server.port}")
+    private String port;
+
     public static void main(String[] args) {
         SpringApplication.run(MidRestJavaDemoApplication.class, args);
     }
+
+    @EventListener({ApplicationReadyEvent.class})
+    void applicationReadyEvent() {
+        System.out.println("Now open http://localhost:"+port);
+    }
+
 }
