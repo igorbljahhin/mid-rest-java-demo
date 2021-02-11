@@ -33,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.core.io.Resource;
 import org.springframework.web.context.WebApplicationContext;
 
 @Configuration
@@ -48,13 +49,13 @@ public class Config {
     private String midApplicationProviderHost;
 
     @Value("${mid.truststore.trusted-server-ssl-certs.filename}")
-    private String midTrustedServerSslCertsFilename;
+    private Resource midTrustedServerSslCertsFilename;
 
     @Value("${mid.truststore.trusted-server-ssl-certs.password}")
     private String midTrustedServerSslCertsPassword;
 
     @Value("${mid.truststore.trusted-root-certs.filename}")
-    private String midTrustedRootCertsFilename;
+    private Resource midTrustedRootCertsFilename;
 
     @Value("${mid.truststore.trusted-root-certs.password}")
     private String midTrustedRootCertsPassword;
@@ -62,7 +63,7 @@ public class Config {
     @Bean
     public MidClient mobileIdClient() throws Exception {
 
-        InputStream is = Config.class.getResourceAsStream(midTrustedServerSslCertsFilename);
+        InputStream is = midTrustedServerSslCertsFilename.getInputStream();
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
         trustStore.load(is, midTrustedServerSslCertsPassword.toCharArray());
 
@@ -84,7 +85,7 @@ public class Config {
 
     @Bean
     public MidAuthenticationResponseValidator midResponseValidator() throws Exception {
-        InputStream is = Config.class.getResourceAsStream(midTrustedRootCertsFilename);
+        InputStream is = midTrustedRootCertsFilename.getInputStream();
         KeyStore trustStore = KeyStore.getInstance("PKCS12");
         trustStore.load(is, midTrustedRootCertsPassword.toCharArray());
 

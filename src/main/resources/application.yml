@@ -18,8 +18,8 @@ mid:
     displayTextLanguage: RUS
   truststore:
     trusted-server-ssl-certs:
-      filename: /mid.trusted_server_certs.p12
-      password: changeit
+      filename: classpath:/mid.test_trusted_server_certs.p12
+      password: changeme
     trusted-root-certs:
-      filename: /mid.trusted_root_certs.p12
+      filename: classpath:/mid.test_trusted_root_certs.p12
       password: changeit
